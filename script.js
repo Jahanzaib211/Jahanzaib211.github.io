@@ -60,26 +60,15 @@ const bootLines = [
   'six facets online · sub-agents ready',
 ];
 const bootEl = document.getElementById('heroBoot');
-const heroTitle = document.getElementById('heroTitle');
-const heroSub = document.getElementById('heroSub');
-const heroCta = document.getElementById('heroCta');
-
-function revealHero() {
-  heroTitle.classList.add('in');
-  heroSub.classList.add('in');
-  heroCta.classList.add('in');
-}
 
 if (reduceMotion) {
   bootEl.textContent = bootLines.join('\n');
-  revealHero();
 } else {
   let lineIdx = 0, charIdx = 0;
   const typed = [];
   function typeStep() {
     if (lineIdx >= bootLines.length) {
       bootEl.innerHTML = typed.join('\n') + '<span class="caret"></span>';
-      revealHero();
       return;
     }
     const currentLine = bootLines[lineIdx];
@@ -116,6 +105,23 @@ camera.position.set(0, 0, 6);
 
 const ACCENT = 0x52f2c5;
 
+/* Soft circular sprite for point materials (avoids hard GL_POINTS squares) */
+function makeDotTexture() {
+  const size = 64;
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const ctx = c.getContext('2d');
+  const grad = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+  grad.addColorStop(0, 'rgba(255,255,255,1)');
+  grad.addColorStop(0.4, 'rgba(255,255,255,0.6)');
+  grad.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, size, size);
+  const tex = new THREE.CanvasTexture(c);
+  return tex;
+}
+const dotTexture = makeDotTexture();
+
 /* Starfield */
 const starCount = 1400;
 const starGeo = new THREE.BufferGeometry();
@@ -127,7 +133,8 @@ for (let i = 0; i < starCount; i++) {
 }
 starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
 const starMat = new THREE.PointsMaterial({
-  color: 0x8a93a6, size: 0.045, transparent: true, opacity: 0.7,
+  color: 0x8a93a6, size: 0.11, map: dotTexture, alphaTest: 0.01,
+  transparent: true, opacity: 0.7,
   blending: THREE.AdditiveBlending, depthWrite: false,
 });
 const stars = new THREE.Points(starGeo, starMat);
@@ -179,7 +186,8 @@ for (let i = 0; i < streamCount; i++) {
 }
 streamGeo.setAttribute('position', new THREE.BufferAttribute(streamPos, 3));
 const streamMat = new THREE.PointsMaterial({
-  color: ACCENT, size: 0.06, transparent: true, opacity: 0.85,
+  color: ACCENT, size: 0.16, map: dotTexture, alphaTest: 0.01,
+  transparent: true, opacity: 0.85,
   blending: THREE.AdditiveBlending, depthWrite: false,
 });
 streamGroup.add(new THREE.Points(streamGeo, streamMat));
@@ -225,6 +233,11 @@ function scrollProgress() {
   return max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0;
 }
 
+function fadeFactor(centerZ, range) {
+  const d = Math.abs(camera.position.z - centerZ);
+  return THREE.MathUtils.clamp(1 - d / range, 0, 1);
+}
+
 function animate() {
   requestAnimationFrame(animate);
   const p = scrollProgress();
@@ -242,6 +255,31 @@ function animate() {
     portal.rotation.z += 0.0016;
     pods.forEach((pod, i) => { pod.rotation.z = Math.sin(Date.now() * 0.0002 + i) * 0.03; });
   }
+
+  /* Keep each object contained to its own level — only visible near its own depth */
+  const coreF = fadeFactor(0, 6.5);
+  coreOuter.material.opacity = 0.55 * coreF;
+  coreInner.material.opacity = 0.08 * coreF;
+  coreGroup.visible = coreF > 0.01;
+
+  const skillsF = fadeFactor(-4.6, 4.2);
+  skillsGroup.children.forEach((n) => { n.material.opacity = 0.8 * skillsF; });
+  skillsGroup.visible = skillsF > 0.01;
+
+  const streamF = fadeFactor(-9.8, 4.2);
+  streamMat.opacity = 0.85 * streamF;
+  streamGroup.visible = streamF > 0.01;
+
+  pods.forEach((pod, i) => {
+    const f = fadeFactor(podDepths[i], 3.6);
+    pod.material.opacity = (i === 0 ? 0.7 : 0.4) * f;
+    pod.visible = f > 0.01;
+  });
+
+  const portalF = fadeFactor(-43.5, 4.2);
+  portal.material.opacity = 0.7 * portalF;
+  portal.visible = portalF > 0.01;
+
   camera.lookAt(0, 0, camera.position.z - 10);
   renderer.render(scene, camera);
 }
