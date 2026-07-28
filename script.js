@@ -1,4 +1,8 @@
 import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
 document.getElementById('year').textContent = new Date().getFullYear();
 
@@ -89,19 +93,55 @@ if (reduceMotion) {
 }
 
 /* ---------------------------------------------------------------
+   Live GitHub stats (replaces flaky third-party widget images)
+--------------------------------------------------------------- */
+async function loadGitHubStats() {
+  try {
+    const res = await fetch('https://api.github.com/users/Jahanzaib211');
+    if (!res.ok) throw new Error(`GitHub API ${res.status}`);
+    const user = await res.json();
+
+    document.getElementById('statRepos').textContent = user.public_repos ?? '—';
+    document.getElementById('statFollowers').textContent = user.followers ?? '—';
+    document.getElementById('statSince').textContent = user.created_at
+      ? new Date(user.created_at).getFullYear()
+      : '—';
+    document.querySelectorAll('#statGrid .stat-tile').forEach((el) => el.classList.remove('loading'));
+  } catch (err) {
+    document.querySelectorAll('#statGrid .stat-value').forEach((el) => { el.textContent = '—'; });
+    document.querySelectorAll('#statGrid .stat-tile').forEach((el) => el.classList.remove('loading'));
+    const fallback = document.getElementById('statFallback');
+    if (fallback) fallback.hidden = false;
+  }
+}
+loadGitHubStats();
+
+/* ---------------------------------------------------------------
    Three.js scene
 --------------------------------------------------------------- */
 const canvas = document.getElementById('scene-canvas');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setClearColor(0x05060a, 1);
+renderer.setClearColor(0x020204, 1);
 
 const scene = new THREE.Scene();
-scene.fog = new THREE.FogExp2(0x05060a, 0.045);
+scene.fog = new THREE.FogExp2(0x020204, 0.045);
 
 const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
 camera.position.set(0, 0, 6);
+
+/* Subtle bloom — soft glow on the accent-colored wireframes/points, not a blowout */
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+const bloomPass = new UnrealBloomPass(
+  new THREE.Vector2(window.innerWidth, window.innerHeight),
+  0.22,  // strength
+  0.3,   // radius
+  0.6    // threshold — high, so only the brightest accent edges bloom, not the dense starfield
+);
+composer.addPass(bloomPass);
+composer.addPass(new OutputPass());
 
 const ACCENT = 0x52f2c5;
 
@@ -186,8 +226,8 @@ for (let i = 0; i < streamCount; i++) {
 }
 streamGeo.setAttribute('position', new THREE.BufferAttribute(streamPos, 3));
 const streamMat = new THREE.PointsMaterial({
-  color: ACCENT, size: 0.16, map: dotTexture, alphaTest: 0.01,
-  transparent: true, opacity: 0.85,
+  color: ACCENT, size: 0.05, map: dotTexture, alphaTest: 0.01,
+  transparent: true, opacity: 0.7,
   blending: THREE.AdditiveBlending, depthWrite: false,
 });
 streamGroup.add(new THREE.Points(streamGeo, streamMat));
@@ -238,16 +278,24 @@ function fadeFactor(centerZ, range) {
   return THREE.MathUtils.clamp(1 - d / range, 0, 1);
 }
 
+/* Frame-rate independent exponential damping (Freya Holmer's "lerp smoothing" fix) */
+function damp(current, target, lambda, dt) {
+  return THREE.MathUtils.lerp(current, target, 1 - Math.exp(-lambda * dt));
+}
+
+const clock = new THREE.Clock();
+
 function animate() {
   requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.1);
   const p = scrollProgress();
   hudProgress.style.width = `${(p * 100).toFixed(1)}%`;
   const targetZ = THREE.MathUtils.lerp(Z_START, Z_END, p);
-  camera.position.z += (targetZ - camera.position.z) * (reduceMotion ? 1 : 0.12);
+  camera.position.z = reduceMotion ? targetZ : damp(camera.position.z, targetZ, 5, dt);
 
   if (!reduceMotion) {
-    camera.position.x += ((mouseX * 0.5) - camera.position.x) * 0.04;
-    camera.position.y += ((-mouseY * 0.3) - camera.position.y) * 0.04;
+    camera.position.x = damp(camera.position.x, mouseX * 0.5, 3, dt);
+    camera.position.y = damp(camera.position.y, -mouseY * 0.3, 3, dt);
     coreGroup.rotation.y += 0.0022;
     coreGroup.rotation.x += 0.0009;
     skillsGroup.rotation.y += 0.0016;
@@ -281,7 +329,7 @@ function animate() {
   portal.visible = portalF > 0.01;
 
   camera.lookAt(0, 0, camera.position.z - 10);
-  renderer.render(scene, camera);
+  composer.render();
 }
 animate();
 
@@ -289,4 +337,5 @@ window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
+  composer.setSize(window.innerWidth, window.innerHeight);
 });

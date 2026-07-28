@@ -5,7 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Jahanzaib Ali — AliLabsX</title>
 <meta name="description" content="Jahanzaib Ali (AliLabsX) — building AI agent infrastructure, self-hosted LLM gateways, and fintech platforms.">
-<link rel="icon" href="data:,">
+<link rel="canonical" href="https://alilabsx.com/">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpolygon points='16,3 28,10 28,22 16,29 4,22 4,10' fill='%2305060a' stroke='%2352f2c5' stroke-width='2'/%3E%3Cline x1='16' y1='3' x2='16' y2='29' stroke='%2352f2c5' stroke-width='1' opacity='0.6'/%3E%3Cline x1='4' y1='10' x2='28' y2='22' stroke='%2352f2c5' stroke-width='1' opacity='0.6'/%3E%3Cline x1='4' y1='22' x2='28' y2='10' stroke='%2352f2c5' stroke-width='1' opacity='0.6'/%3E%3C/svg%3E">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="Jahanzaib Ali — AliLabsX">
+<meta property="og:description" content="Building the infrastructure behind AI agents — agent runtimes, self-hosted LLM gateways, fintech platforms, and the hosting layer underneath.">
+<meta property="og:url" content="https://alilabsx.com/">
+<meta property="og:image" content="https://alilabsx.com/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Jahanzaib Ali — AliLabsX">
+<meta name="twitter:description" content="Building the infrastructure behind AI agents — agent runtimes, self-hosted LLM gateways, fintech platforms, and the hosting layer underneath.">
+<meta name="twitter:image" content="https://alilabsx.com/og-image.png">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -13,14 +27,17 @@
 <script type="importmap">
 {
   "imports": {
-    "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
   }
 }
 </script>
 </head>
 <body>
 
-<canvas id="scene-canvas"></canvas>
+<a href="#main-content" class="skip-link">Skip to content</a>
+
+<canvas id="scene-canvas" aria-hidden="true"></canvas>
 
 <noscript>
   <div style="position:relative;z-index:20;padding:40px;font-family:sans-serif;color:#eef1f6;background:#05060a;">
@@ -52,7 +69,7 @@
   </nav>
 </div>
 
-<div class="content">
+<main id="main-content" class="content">
 
   <section class="level hero" id="hero" data-level="0" data-level-name="BOOT">
     <div class="hero-boot" id="heroBoot" aria-hidden="true"></div>
@@ -139,17 +156,27 @@
 
   <section class="level" id="level-activity" data-level="3" data-level-name="ACTIVITY">
     <div class="level-inner wide panel">
-      <span class="eyebrow">$ git log --author="Jahanzaib Ali" --stat</span>
+      <span class="eyebrow">$ gh api /users/Jahanzaib211</span>
       <h2 class="level-title">Activity</h2>
-      <div class="gh-stats">
-        <img
-          src="https://github-readme-stats.vercel.app/api?username=Jahanzaib211&show_icons=true&theme=transparent&hide_border=true&title_color=52f2c5&icon_color=52f2c5&text_color=8a93a6&hide=stars"
-          alt="Jahanzaib Ali's GitHub stats" loading="lazy" class="gh-img" onerror="this.style.display='none'">
-        <img
-          src="https://github-readme-activity-graph.vercel.app/graph?username=Jahanzaib211&theme=react-dark&hide_border=true&bg_color=00000000&color=8a93a6&line=52f2c5&point=52f2c5&area=true"
-          alt="Contribution activity graph" loading="lazy" class="gh-img" onerror="this.style.display='none'">
+
+      <div class="stat-grid" id="statGrid">
+        <div class="stat-tile loading">
+          <span class="stat-value" id="statRepos">···</span>
+          <span class="stat-label">Public repos</span>
+        </div>
+        <div class="stat-tile loading">
+          <span class="stat-value" id="statFollowers">···</span>
+          <span class="stat-label">Followers</span>
+        </div>
+        <div class="stat-tile loading">
+          <span class="stat-value" id="statSince">···</span>
+          <span class="stat-label">Member since</span>
+        </div>
       </div>
-      <a class="gh-cta" href="https://github.com/Jahanzaib211" target="_blank" rel="noopener">See the full contribution history on GitHub &rarr;</a>
+
+      <p class="case-block" id="statFallback" hidden>Live stats are momentarily unavailable (GitHub API) — the link below always works.</p>
+
+      <a class="gh-cta" href="https://github.com/Jahanzaib211" target="_blank" rel="noopener">See full activity on GitHub &rarr;</a>
     </div>
   </section>
 
@@ -159,7 +186,14 @@
       <div class="level-inner panel">
         <span class="pod-tag">FLAGSHIP · LIVE</span>
         <h2 class="level-title">Nova<span class="pod-sub">The Agent's Computer</span></h2>
-        <p class="desc">A full-stack computer-use AI agent that researches, codes, and creates. Orchestrates sub-agents, memory, and per-thread sandboxes with a live, streaming six-facet view of its own computer — Files, Terminal, Editor, Browser, Activity, Review.</p>
+        <div class="case-block">
+          <span class="case-label">Problem</span>
+          <p>Most AI coding agents are a black-box chat window — you can't see what they're doing, or trust the result, until it's already done.</p>
+        </div>
+        <div class="case-block">
+          <span class="case-label">Approach</span>
+          <p>Nova gives the agent an actual computer: a live, streaming six-facet view — Files, Terminal, Editor, Browser, Activity, Review — so you watch it work in real time, with sub-agents, memory, and per-thread sandboxes handling execution.</p>
+        </div>
         <div class="tags">
           <span class="tag">Python</span><span class="tag">LangGraph</span><span class="tag">LangChain</span><span class="tag">Next.js</span>
         </div>
@@ -174,7 +208,14 @@
       <div class="level-inner panel">
         <span class="pod-tag">01 / 04</span>
         <h2 class="level-title">Forge Studio</h2>
-        <p class="desc">Self-hosted AI lab control center — a unified proxy layer between applications and LLM providers, with smart routing, fallbacks, budget tracking, a visual proxy-pool topology, and a Prometheus <code>/metrics</code> endpoint.</p>
+        <div class="case-block">
+          <span class="case-label">Problem</span>
+          <p>Running production AI features across multiple LLM providers means juggling separate API keys, no shared budget visibility, and no failover when a provider goes down.</p>
+        </div>
+        <div class="case-block">
+          <span class="case-label">Approach</span>
+          <p>A self-hosted proxy layer in front of every provider — smart routing with automatic fallback, per-provider budget tracking, a visual proxy-pool topology with live health/latency, and a Prometheus <code>/metrics</code> endpoint so every request is observable.</p>
+        </div>
         <div class="tags">
           <span class="tag">TypeScript</span><span class="tag">Next.js</span><span class="tag">Prometheus</span>
         </div>
@@ -189,7 +230,14 @@
       <div class="level-inner panel">
         <span class="pod-tag">02 / 04</span>
         <h2 class="level-title">Genesis X</h2>
-        <p class="desc">A digital investment platform for browsing, purchasing, and managing bonds, equities, real estate, and digital assets as products — with transparent pricing and a full transactional backend.</p>
+        <div class="case-block">
+          <span class="case-label">Problem</span>
+          <p>Buying access to bonds, real estate, or private equity as an individual investor usually means opaque intermediaries with no unified view of pricing or holdings.</p>
+        </div>
+        <div class="case-block">
+          <span class="case-label">Approach</span>
+          <p>Genesis X packages these instruments as digital products investors browse, buy, and manage directly — transparent pricing on top of a full transactional backend: auth, payments, and holdings.</p>
+        </div>
         <div class="tags">
           <span class="tag">Next.js 14</span><span class="tag">NestJS 10</span><span class="tag">PostgreSQL</span><span class="tag">Prisma</span>
         </div>
@@ -204,7 +252,14 @@
       <div class="level-inner panel">
         <span class="pod-tag">03 / 04</span>
         <h2 class="level-title">Ali Kernel</h2>
-        <p class="desc">A single-binary Rust runtime exposing an OpenAI-compatible API that augments any model with tool access, RAG memory, self-critique, semantic routing, and structured observability — the model backend is fully pluggable.</p>
+        <div class="case-block">
+          <span class="case-label">Problem</span>
+          <p>Swapping the LLM behind an agent usually means rebuilding the tooling, memory, and safety scaffolding around it from scratch for the new backend.</p>
+        </div>
+        <div class="case-block">
+          <span class="case-label">Approach</span>
+          <p>A single-binary Rust gateway in front of any OpenAI-compatible backend — tool access, RAG memory, semantic routing, and a self-critique loop stay constant no matter which model sits behind it, from a local llama.cpp server to any hosted provider.</p>
+        </div>
         <div class="tags">
           <span class="tag">Rust</span><span class="tag">RAG</span><span class="tag">Semantic routing</span>
         </div>
@@ -218,7 +273,14 @@
       <div class="level-inner panel">
         <span class="pod-tag">04 / 04</span>
         <h2 class="level-title">fox-hosting</h2>
-        <p class="desc">A production-grade web hosting platform built on WHMCS 8.10 and Next.js 16, with a custom license server and direct MySQL integration for the client portal.</p>
+        <div class="case-block">
+          <span class="case-label">Problem</span>
+          <p>WHMCS is the industry-standard hosting/billing platform, but it's locked behind an external license server and an ionCube-encoded API that's slow to integrate with a modern frontend.</p>
+        </div>
+        <div class="case-block">
+          <span class="case-label">Approach</span>
+          <p>Pairs WHMCS 8.10 with a custom-built license server (no external whmcs.com dependency) and a Next.js 16 client portal that talks to MySQL directly, bypassing the encoded API entirely.</p>
+        </div>
         <div class="tags">
           <span class="tag">PHP</span><span class="tag">Next.js</span><span class="tag">Docker</span>
         </div>
@@ -242,7 +304,7 @@
     </div>
   </section>
 
-</div>
+</main>
 
 <footer class="footer">
   <span>&copy; <span id="year"></span> Jahanzaib Ali</span>
