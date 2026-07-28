@@ -6,92 +6,97 @@
 <title>Jahanzaib Ali — AliLabsX</title>
 <meta name="description" content="Jahanzaib Ali (AliLabsX) — building AI agent infrastructure, self-hosted LLM gateways, and fintech platforms.">
 <link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+  }
+}
+</script>
 </head>
 <body>
 
-<header class="nav" id="nav">
-  <div class="nav-inner">
-    <a href="#top" class="nav-logo">JA<span class="dot">.</span></a>
-    <nav class="nav-links" id="navLinks">
-      <a href="#about">About</a>
-      <a href="#skills">Skills</a>
-      <a href="#activity">Activity</a>
-      <a href="#projects">Projects</a>
-      <a href="#contact">Contact</a>
-    </nav>
-    <div class="nav-actions">
-      <a href="https://github.com/Jahanzaib211" class="btn btn-ghost" target="_blank" rel="noopener">GitHub</a>
-      <button class="nav-toggle" id="navToggle" aria-label="Toggle menu" aria-expanded="false">
-        <span></span><span></span><span></span>
-      </button>
-    </div>
+<canvas id="scene-canvas"></canvas>
+
+<noscript>
+  <div style="position:relative;z-index:20;padding:40px;font-family:sans-serif;color:#eef1f6;background:#05060a;">
+    <h1>Jahanzaib Ali</h1>
+    <p>This page uses an interactive 3D scene that requires JavaScript. Reach me at
+    <a href="https://github.com/Jahanzaib211" style="color:#52f2c5">github.com/Jahanzaib211</a> or
+    <a href="https://www.linkedin.com/in/jahanzaib-ali-labsx" style="color:#52f2c5">LinkedIn</a>.</p>
   </div>
+</noscript>
+
+<header class="hud">
+  <a href="#hero" class="hud-logo" id="hudLogo">~/jahanzaib<span class="cursor"></span></a>
+  <div class="hud-status">
+    <span class="level-tag" id="hudLevel">LVL 00 · BOOT</span>
+    <div class="hud-progress-track"><div class="hud-progress-fill" id="hudProgress"></div></div>
+  </div>
+  <button class="hud-menu-btn" id="hudMenuBtn" aria-haspopup="true" aria-expanded="false">MENU</button>
 </header>
 
-<main id="top">
+<div class="hud-menu" id="hudMenu">
+  <button class="hud-menu-close" id="hudMenuClose">CLOSE ✕</button>
+  <nav class="hud-menu-list">
+    <a href="#hero"><span class="num">00</span> Hero</a>
+    <a href="#level-about"><span class="num">01</span> About</a>
+    <a href="#level-skills"><span class="num">02</span> Skills</a>
+    <a href="#level-activity"><span class="num">03</span> Activity</a>
+    <a href="#level-projects"><span class="num">04</span> Projects</a>
+    <a href="#level-contact"><span class="num">05</span> Contact</a>
+  </nav>
+</div>
 
-  <section class="hero">
-    <div class="hero-bg" aria-hidden="true"></div>
-    <div class="container hero-inner">
-      <p class="eyebrow reveal">AliLabsX &middot; Sole builder</p>
-      <h1 class="hero-title reveal">
-        Jahanzaib Ali
-      </h1>
-      <p class="hero-sub reveal">
-        I design and ship the infrastructure behind AI agents —
-        from the agent runtime and LLM gateway down to the hosting
-        layer it all runs on.
+<div class="content">
+
+  <section class="level hero" id="hero" data-level="0" data-level-name="BOOT">
+    <div class="hero-boot" id="heroBoot" aria-hidden="true"></div>
+    <h1 class="hero-title" id="heroTitle">JAHANZAIB ALI</h1>
+    <p class="hero-sub" id="heroSub">I build the infrastructure behind AI agents — from the agent runtime and LLM gateway down to the hosting layer it all runs on.</p>
+    <div class="hero-cta" id="heroCta">
+      <a href="#level-projects" class="btn btn-primary">View Projects</a>
+      <a href="#level-contact" class="btn btn-outline">Get in touch</a>
+    </div>
+    <div class="scroll-cue"><span>SCROLL TO ENTER</span><span class="stick"></span></div>
+  </section>
+
+  <section class="level" id="level-about" data-level="1" data-level-name="ABOUT">
+    <div class="level-inner panel">
+      <span class="eyebrow">$ whoami</span>
+      <h2 class="level-title">About</h2>
+      <p class="about-text">
+        I build production-grade systems solo — end to end. That means the AI
+        agent runtime and its orchestration layer, the LLM gateway it talks
+        to, the database and infra underneath, and the hosting stack that
+        keeps it all online. Not prototypes — systems with admin control
+        planes, observability, budgets, and audit trails from day one.
+        <br><br>
+        My work spans autonomous computer-use agents, self-hosted LLM
+        routing and proxy infrastructure, fintech platforms handling real
+        transactions, and the hosting/licensing systems underneath. Python
+        and Rust on the backend, Next.js and NestJS on the front, Postgres
+        and Docker everywhere in between.
       </p>
-      <div class="hero-actions reveal">
-        <a href="#projects" class="btn btn-primary">View Projects</a>
-        <a href="#contact" class="btn btn-outline">Get in touch</a>
-      </div>
-      <div class="hero-links reveal">
-        <a href="https://github.com/Jahanzaib211" target="_blank" rel="noopener">github.com/Jahanzaib211</a>
-        <span class="sep">/</span>
-        <a href="https://www.linkedin.com/in/jahanzaib-ali-labsx" target="_blank" rel="noopener">LinkedIn</a>
-        <span class="sep">/</span>
-        <a href="https://www.alilabsx.com" target="_blank" rel="noopener">alilabsx.com</a>
+      <div class="about-chips">
+        <span class="chip">Full-stack, solo-built</span>
+        <span class="chip">AI agent infrastructure</span>
+        <span class="chip">Self-hosted LLM systems</span>
+        <span class="chip">Production, not demos</span>
       </div>
     </div>
   </section>
 
-  <section id="about" class="section">
-    <div class="container">
-      <p class="section-label reveal">About</p>
-      <div class="about-grid">
-        <p class="about-text reveal">
-          I build production-grade systems solo — end to end. That means
-          the AI agent runtime and its orchestration layer, the LLM gateway
-          it talks to, the database and infra underneath, and the hosting
-          stack that keeps it all online. Not prototypes — systems with
-          admin control planes, observability, budgets, and audit trails
-          from day one.
-          <br><br>
-          My work spans autonomous computer-use agents, self-hosted LLM
-          routing and proxy infrastructure, fintech platforms handling
-          real transactions, and the hosting/licensing systems that sit
-          under all of it. I move fluently across the stack — Python and
-          Rust on the backend, Next.js and NestJS on the front, Postgres
-          and Docker everywhere in between — because shipping a real
-          product means owning every layer, not just the interesting one.
-        </p>
-        <div class="about-chips reveal">
-          <div class="chip">Full-stack, solo-built</div>
-          <div class="chip">AI agent infrastructure</div>
-          <div class="chip">Self-hosted LLM systems</div>
-          <div class="chip">Production, not demos</div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section id="skills" class="section section-alt">
-    <div class="container">
-      <p class="section-label reveal">Skills</p>
-      <div class="skills-grid">
-        <div class="skill-group reveal">
+  <section class="level align-right" id="level-skills" data-level="2" data-level-name="SKILLS">
+    <div class="level-inner panel">
+      <span class="eyebrow">$ ls ~/skills</span>
+      <h2 class="level-title">Skills</h2>
+      <div class="skill-groups">
+        <div class="skill-group">
           <h3>Languages</h3>
           <div class="tags">
             <span class="tag">Python</span>
@@ -100,7 +105,7 @@
             <span class="tag">PHP</span>
           </div>
         </div>
-        <div class="skill-group reveal">
+        <div class="skill-group">
           <h3>Frameworks</h3>
           <div class="tags">
             <span class="tag">Next.js</span>
@@ -109,7 +114,7 @@
             <span class="tag">LangGraph / LangChain</span>
           </div>
         </div>
-        <div class="skill-group reveal">
+        <div class="skill-group">
           <h3>Data &amp; Infra</h3>
           <div class="tags">
             <span class="tag">PostgreSQL</span>
@@ -119,7 +124,7 @@
             <span class="tag">Turborepo</span>
           </div>
         </div>
-        <div class="skill-group reveal">
+        <div class="skill-group">
           <h3>AI &amp; Agents</h3>
           <div class="tags">
             <span class="tag">MCP</span>
@@ -132,138 +137,104 @@
     </div>
   </section>
 
-  <section id="activity" class="section">
-    <div class="container">
-      <p class="section-label reveal">GitHub Activity</p>
-      <div class="gh-stats reveal">
+  <section class="level" id="level-activity" data-level="3" data-level-name="ACTIVITY">
+    <div class="level-inner wide panel">
+      <span class="eyebrow">$ git log --author="Jahanzaib Ali" --stat</span>
+      <h2 class="level-title">Activity</h2>
+      <div class="gh-stats">
         <img
-          src="https://github-readme-stats.vercel.app/api?username=Jahanzaib211&show_icons=true&theme=transparent&hide_border=true&title_color=34e6c8&icon_color=7c5cff&text_color=9aa0ac&hide=stars"
+          src="https://github-readme-stats.vercel.app/api?username=Jahanzaib211&show_icons=true&theme=transparent&hide_border=true&title_color=52f2c5&icon_color=52f2c5&text_color=8a93a6&hide=stars"
           alt="Jahanzaib Ali's GitHub stats" loading="lazy" class="gh-img">
         <img
-          src="https://github-readme-stats.vercel.app/api/top-langs/?username=Jahanzaib211&layout=compact&theme=transparent&hide_border=true&title_color=34e6c8&text_color=9aa0ac"
-          alt="Most used languages" loading="lazy" class="gh-img">
+          src="https://github-readme-activity-graph.vercel.app/graph?username=Jahanzaib211&theme=react-dark&hide_border=true&bg_color=00000000&color=8a93a6&line=52f2c5&point=52f2c5&area=true"
+          alt="Contribution activity graph" loading="lazy" class="gh-img">
       </div>
-      <div class="gh-graph reveal">
-        <img
-          src="https://github-readme-activity-graph.vercel.app/graph?username=Jahanzaib211&theme=react-dark&hide_border=true&bg_color=00000000&color=9aa0ac&line=7c5cff&point=34e6c8&area=true"
-          alt="Contribution activity graph" loading="lazy" class="gh-img gh-img-wide">
-      </div>
-      <a class="gh-cta reveal" href="https://github.com/Jahanzaib211" target="_blank" rel="noopener">See the full contribution history on GitHub &rarr;</a>
+      <a class="gh-cta" href="https://github.com/Jahanzaib211" target="_blank" rel="noopener">See the full contribution history on GitHub &rarr;</a>
     </div>
   </section>
 
-  <section id="projects" class="section section-alt">
-    <div class="container">
-      <p class="section-label reveal">Projects</p>
+  <section class="level projects-level" id="level-projects" data-level="4" data-level-name="PROJECTS">
 
-      <a class="project-card project-featured reveal" href="https://nova.alilabsx.com" target="_blank" rel="noopener">
-        <div class="project-featured-tag">Flagship build &middot; live</div>
-        <div class="project-featured-body">
-          <h3>Nova <span class="project-sub">— The Agent's Computer</span></h3>
-          <p>
-            A full-stack computer-use AI agent that researches, codes, and
-            creates. Orchestrates sub-agents, memory, and per-thread
-            sandboxes with a live, streaming six-facet view of the agent's
-            own computer — Files, Terminal, Editor, Browser, Activity, Review.
-          </p>
-          <div class="tags">
-            <span class="tag">Python</span>
-            <span class="tag">LangGraph</span>
-            <span class="tag">LangChain</span>
-            <span class="tag">Next.js</span>
-          </div>
-          <div class="project-links">
-            <span class="link-live">nova.alilabsx.com &rarr;</span>
-            <span class="link-code" data-repo="nova">github.com/Jahanzaib211/nova</span>
-          </div>
+    <div class="project-pod flagship" id="proj-nova">
+      <div class="level-inner panel">
+        <span class="pod-tag">FLAGSHIP · LIVE</span>
+        <h2 class="level-title">Nova<span class="pod-sub">The Agent's Computer</span></h2>
+        <p class="desc">A full-stack computer-use AI agent that researches, codes, and creates. Orchestrates sub-agents, memory, and per-thread sandboxes with a live, streaming six-facet view of its own computer — Files, Terminal, Editor, Browser, Activity, Review.</p>
+        <div class="tags">
+          <span class="tag">Python</span><span class="tag">LangGraph</span><span class="tag">LangChain</span><span class="tag">Next.js</span>
         </div>
-      </a>
-
-      <div class="project-grid">
-
-        <div class="project-card reveal">
-          <h3>Forge Studio</h3>
-          <p>
-            Self-hosted AI lab control center — a unified proxy layer
-            between applications and LLM providers, with smart routing,
-            fallbacks, budget tracking, a visual proxy-pool topology, and
-            a Prometheus <code>/metrics</code> endpoint.
-          </p>
-          <div class="tags">
-            <span class="tag">TypeScript</span>
-            <span class="tag">Next.js</span>
-            <span class="tag">Prometheus</span>
-          </div>
-          <div class="project-links">
-            <a href="https://www.alilabsx.com" target="_blank" rel="noopener" class="link-live">alilabsx.com &rarr;</a>
-            <a href="https://github.com/Jahanzaib211/forge-studio" target="_blank" rel="noopener" class="link-code">Code</a>
-          </div>
+        <div class="project-links">
+          <a href="https://nova.alilabsx.com" target="_blank" rel="noopener" class="link-live">nova.alilabsx.com &rarr;</a>
+          <a href="https://github.com/Jahanzaib211/nova" target="_blank" rel="noopener" class="link-code">Code</a>
         </div>
-
-        <div class="project-card reveal">
-          <h3>Genesis X</h3>
-          <p>
-            A digital investment platform for browsing, purchasing, and
-            managing bonds, equities, real estate, and digital assets as
-            products — with transparent pricing and a full transactional
-            backend.
-          </p>
-          <div class="tags">
-            <span class="tag">Next.js 14</span>
-            <span class="tag">NestJS 10</span>
-            <span class="tag">PostgreSQL</span>
-            <span class="tag">Prisma</span>
-          </div>
-          <div class="project-links">
-            <a href="https://www.alilabsx.com" target="_blank" rel="noopener" class="link-live">alilabsx.com &rarr;</a>
-            <a href="https://github.com/Jahanzaib211/Genesis-X-Project" target="_blank" rel="noopener" class="link-code">Code</a>
-          </div>
-        </div>
-
-        <div class="project-card reveal">
-          <h3>Ali Kernel</h3>
-          <p>
-            A single-binary Rust runtime exposing an OpenAI-compatible API
-            that augments any model with tool access, RAG memory,
-            self-critique, semantic routing, and structured observability
-            — the model backend is fully pluggable.
-          </p>
-          <div class="tags">
-            <span class="tag">Rust</span>
-            <span class="tag">RAG</span>
-            <span class="tag">Semantic routing</span>
-          </div>
-          <div class="project-links">
-            <a href="https://github.com/Jahanzaib211/ali-kernel" target="_blank" rel="noopener" class="link-code">Code</a>
-          </div>
-        </div>
-
-        <div class="project-card reveal">
-          <h3>fox-hosting</h3>
-          <p>
-            A production-grade web hosting platform built on WHMCS 8.10
-            and Next.js 16, with a custom license server and direct MySQL
-            integration for the client portal.
-          </p>
-          <div class="tags">
-            <span class="tag">PHP</span>
-            <span class="tag">Next.js</span>
-            <span class="tag">Docker</span>
-          </div>
-          <div class="project-links">
-            <a href="https://github.com/Jahanzaib211/fox-hosting" target="_blank" rel="noopener" class="link-code">Code</a>
-          </div>
-        </div>
-
       </div>
     </div>
+
+    <div class="project-pod" id="proj-forge">
+      <div class="level-inner panel">
+        <span class="pod-tag">01 / 04</span>
+        <h2 class="level-title">Forge Studio</h2>
+        <p class="desc">Self-hosted AI lab control center — a unified proxy layer between applications and LLM providers, with smart routing, fallbacks, budget tracking, a visual proxy-pool topology, and a Prometheus <code>/metrics</code> endpoint.</p>
+        <div class="tags">
+          <span class="tag">TypeScript</span><span class="tag">Next.js</span><span class="tag">Prometheus</span>
+        </div>
+        <div class="project-links">
+          <a href="https://www.alilabsx.com" target="_blank" rel="noopener" class="link-live">alilabsx.com &rarr;</a>
+          <a href="https://github.com/Jahanzaib211/forge-studio" target="_blank" rel="noopener" class="link-code">Code</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="project-pod" id="proj-genesis">
+      <div class="level-inner panel">
+        <span class="pod-tag">02 / 04</span>
+        <h2 class="level-title">Genesis X</h2>
+        <p class="desc">A digital investment platform for browsing, purchasing, and managing bonds, equities, real estate, and digital assets as products — with transparent pricing and a full transactional backend.</p>
+        <div class="tags">
+          <span class="tag">Next.js 14</span><span class="tag">NestJS 10</span><span class="tag">PostgreSQL</span><span class="tag">Prisma</span>
+        </div>
+        <div class="project-links">
+          <a href="https://www.alilabsx.com" target="_blank" rel="noopener" class="link-live">alilabsx.com &rarr;</a>
+          <a href="https://github.com/Jahanzaib211/Genesis-X-Project" target="_blank" rel="noopener" class="link-code">Code</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="project-pod" id="proj-kernel">
+      <div class="level-inner panel">
+        <span class="pod-tag">03 / 04</span>
+        <h2 class="level-title">Ali Kernel</h2>
+        <p class="desc">A single-binary Rust runtime exposing an OpenAI-compatible API that augments any model with tool access, RAG memory, self-critique, semantic routing, and structured observability — the model backend is fully pluggable.</p>
+        <div class="tags">
+          <span class="tag">Rust</span><span class="tag">RAG</span><span class="tag">Semantic routing</span>
+        </div>
+        <div class="project-links">
+          <a href="https://github.com/Jahanzaib211/ali-kernel" target="_blank" rel="noopener" class="link-code">Code</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="project-pod" id="proj-fox">
+      <div class="level-inner panel">
+        <span class="pod-tag">04 / 04</span>
+        <h2 class="level-title">fox-hosting</h2>
+        <p class="desc">A production-grade web hosting platform built on WHMCS 8.10 and Next.js 16, with a custom license server and direct MySQL integration for the client portal.</p>
+        <div class="tags">
+          <span class="tag">PHP</span><span class="tag">Next.js</span><span class="tag">Docker</span>
+        </div>
+        <div class="project-links">
+          <a href="https://github.com/Jahanzaib211/fox-hosting" target="_blank" rel="noopener" class="link-code">Code</a>
+        </div>
+      </div>
+    </div>
+
   </section>
 
-  <section id="contact" class="section contact-section">
-    <div class="container">
-      <p class="section-label reveal">Contact</p>
-      <h2 class="contact-title reveal">Let's build something.</h2>
-      <div class="contact-links reveal">
+  <section class="level contact-level" id="level-contact" data-level="5" data-level-name="CONTACT">
+    <div class="level-inner">
+      <span class="eyebrow">$ open contact</span>
+      <h2 class="level-title">Let's build something.</h2>
+      <div class="contact-links">
         <a href="https://github.com/Jahanzaib211" target="_blank" rel="noopener" class="btn btn-outline">GitHub</a>
         <a href="https://www.linkedin.com/in/jahanzaib-ali-labsx" target="_blank" rel="noopener" class="btn btn-outline">LinkedIn</a>
         <a href="https://www.alilabsx.com" target="_blank" rel="noopener" class="btn btn-outline">alilabsx.com</a>
@@ -271,15 +242,13 @@
     </div>
   </section>
 
-</main>
+</div>
 
 <footer class="footer">
-  <div class="container footer-inner">
-    <span>&copy; <span id="year"></span> Jahanzaib Ali</span>
-    <span class="footer-sep">AliLabsX</span>
-  </div>
+  <span>&copy; <span id="year"></span> Jahanzaib Ali</span>
+  <span>AliLabsX</span>
 </footer>
 
-<script src="script.js"></script>
+<script type="module" src="script.js"></script>
 </body>
 </html>
