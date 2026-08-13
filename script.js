@@ -44,7 +44,7 @@ const levelObserver = new IntersectionObserver(
         const el = entry.target;
         const num = el.dataset.level ?? el.closest('.level')?.dataset.level ?? '0';
         const name = el.dataset.levelName ?? el.closest('.level')?.dataset.levelName ?? 'BOOT';
-        hudLevel.textContent = `LVL 0${num} · ${name}`;
+        hudLevel.textContent = `LVL ${String(num).padStart(2, '0')} · ${name}`;
       }
     });
   },
@@ -248,19 +248,82 @@ const pods = podDepths.map((z, i) => {
   return wire;
 });
 
-/* Contact portal (level 5) */
+/* Credential slab (level 5) — the certificate as a real object in the scene.
+   Unlike the ambient level objects, this one carries content that has to stay
+   legible, so it rides a fixed distance ahead of the camera and takes its
+   opacity from the DOM section's position rather than from raw camera depth
+   (a depth-keyed fade would peak between levels, not on this one). */
+const CERT_DIST = 3.4;
+const CERT_H = 2.3;
+const CERT_W = CERT_H * 0.7071; /* A4 portrait aspect */
+const certSection = document.getElementById('level-credentials');
+
+const certGroup = new THREE.Group();
+
+const certPlaneGeo = new THREE.PlaneGeometry(CERT_W, CERT_H);
+const certFaceMat = new THREE.MeshBasicMaterial({
+  color: 0xffffff, transparent: true, opacity: 0, side: THREE.DoubleSide,
+});
+const certFace = new THREE.Mesh(certPlaneGeo, certFaceMat);
+
+/* Accent edge frame — this is what the bloom pass picks up, same as the pods */
+const certFrameMat = new THREE.LineBasicMaterial({ color: ACCENT, transparent: true, opacity: 0 });
+const certFrame = new THREE.LineSegments(new THREE.EdgesGeometry(certPlaneGeo), certFrameMat);
+certFrame.scale.set(1.02, 1.02, 1);
+
+certGroup.add(certFace, certFrame);
+certGroup.visible = false;
+scene.add(certGroup);
+
+/* Texture loads async; the DOM thumbnail stays as fallback until it lands */
+let certReady = false;
+new THREE.TextureLoader().load(
+  'assets/cert-amd-act2.jpg',
+  (tex) => {
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    certFaceMat.map = tex;
+    certFaceMat.needsUpdate = true;
+    certReady = true;
+    document.body.classList.add('cert3d-ready');
+  },
+  undefined,
+  () => { /* load failed — leave the DOM thumbnail visible */ }
+);
+
+/* Slab sits beside the text panel on wide screens, and is dropped on narrow ones.
+   The x offset is derived from the frustum width at CERT_DIST so the slab stays
+   inside the viewport at any aspect ratio instead of being clipped. */
+let certDim = 1;
+function positionCert() {
+  const narrow = window.innerWidth < 860;
+  const visibleH = 2 * CERT_DIST * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+  const visibleW = visibleH * camera.aspect;
+  certGroup.position.x = -visibleW * 0.25;
+  /* On narrow screens the panel spans the full width, so the slab would just sit
+     behind it — the DOM thumbnail carries the certificate there instead. */
+  certDim = narrow ? 0 : 1;
+}
+positionCert();
+
+/* Contact portal (level 6). Sits far enough ahead of where the camera comes to
+   rest that the whole ring fits on screen — closer in, its 4-unit diameter
+   overflows the frustum and the "portal" is invisible at the level it belongs to. */
+const PORTAL_Z = -57.0;
+const PORTAL_RANGE = 8.0;
+const PORTAL_OPACITY = 0.4; /* sits behind the contact copy, so keep it quiet */
 const portal = new THREE.Mesh(
   new THREE.TorusGeometry(2, 0.045, 16, 64),
-  new THREE.MeshBasicMaterial({ color: ACCENT, transparent: true, opacity: 0.7 })
+  new THREE.MeshBasicMaterial({ color: ACCENT, transparent: true, opacity: PORTAL_OPACITY })
 );
-portal.position.set(0, 0, -43.5);
+portal.position.set(0, 0, PORTAL_Z);
 scene.add(portal);
 
 /* ---------------------------------------------------------------
    Scroll-driven camera flight
 --------------------------------------------------------------- */
 const Z_START = 6;
-const Z_END = -47;
+const Z_END = -52.8;
 
 let mouseX = 0, mouseY = 0;
 window.addEventListener('mousemove', (e) => {
@@ -324,8 +387,30 @@ function animate() {
     pod.visible = f > 0.01;
   });
 
-  const portalF = fadeFactor(-43.5, 4.2);
-  portal.material.opacity = 0.7 * portalF;
+  /* Certificate: turns from edge-on to face-on as you scroll into the level,
+     then tracks the pointer while it's on screen */
+  const certRect = certSection.getBoundingClientRect();
+  const certOffset = Math.abs(certRect.top + certRect.height / 2 - window.innerHeight / 2);
+  const certF = THREE.MathUtils.clamp(1 - certOffset / (window.innerHeight * 0.6), 0, 1);
+  certGroup.position.z = camera.position.z - CERT_DIST;
+
+  if (reduceMotion) {
+    certGroup.rotation.set(0, 0, 0);
+  } else {
+    const t = Date.now() * 0.001;
+    certGroup.rotation.y = (1 - certF) * 1.15 + mouseX * 0.45 * certF;
+    certGroup.rotation.x = damp(certGroup.rotation.x, -mouseY * 0.3 * certF, 4, dt);
+    certGroup.rotation.z = Math.sin(t * 0.35) * 0.025 * certF;
+    certGroup.position.y = Math.sin(t * 0.5) * 0.09 * certF;
+  }
+  /* Nothing renders until the texture is on the GPU — otherwise a texture
+     failure would leave an empty glowing frame floating next to the panel */
+  certFaceMat.opacity = certF * certDim;
+  certFrameMat.opacity = 0.6 * certF * certDim;
+  certGroup.visible = certReady && certF > 0.01 && certDim > 0;
+
+  const portalF = fadeFactor(PORTAL_Z, PORTAL_RANGE);
+  portal.material.opacity = PORTAL_OPACITY * portalF;
   portal.visible = portalF > 0.01;
 
   camera.lookAt(0, 0, camera.position.z - 10);
@@ -338,4 +423,5 @@ window.addEventListener('resize', () => {
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
   composer.setSize(window.innerWidth, window.innerHeight);
+  positionCert();
 });
