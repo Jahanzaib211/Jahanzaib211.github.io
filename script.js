@@ -278,7 +278,9 @@ scene.add(certGroup);
 /* Texture loads async; the DOM thumbnail stays as fallback until it lands */
 let certReady = false;
 new THREE.TextureLoader().load(
-  'assets/cert-amd-act2.jpg',
+  /* Content-hashed filename: a new render gets a new URL, so it can never be
+     shadowed by a stale CDN entry for the old one. */
+  'assets/cert-amd-act2.726573b7.jpg',
   (tex) => {
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
