@@ -59,9 +59,9 @@ const bootLines = [
   '$ ssh operator@alilabsx.com',
   'Connected.',
   '$ whoami',
-  'Jahanzaib Ali',
-  '$ nova status',
-  'six facets online · sub-agents ready',
+  'Jahanzaib Ali — Founder & Lead Platform Engineer',
+  '$ alilabsx status',
+  'apex platform online · 9 capability areas · 8 modules shipped',
 ];
 const bootEl = document.getElementById('heroBoot');
 
