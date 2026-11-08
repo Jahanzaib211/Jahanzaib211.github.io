@@ -59,9 +59,9 @@ const bootLines = [
   '$ ssh operator@alilabsx.com',
   'Connected.',
   '$ whoami',
-  'Jahanzaib Ali — Founder & Lead Platform Engineer',
+  'Jahanzaib Ali — Founder & Systems Engineer',
   '$ alilabsx status',
-  'apex platform online · 9 capability areas · 8 modules shipped',
+  'online: nova-bots · nova · loco · storeloom',
 ];
 const bootEl = document.getElementById('heroBoot');
 
@@ -234,8 +234,8 @@ streamGroup.add(new THREE.Points(streamGeo, streamMat));
 scene.add(streamGroup);
 
 /* Project pods (level 4) */
-const podDepths = [-17.4, -22.6, -27.8, -33.0, -38.2];
-const podScales = [1.5, 1.05, 1.05, 1.05, 1.05];
+const podDepths = [-17.4, -22.6, -27.8, -33.0];
+const podScales = [1.5, 1.05, 1.05, 1.05];
 const pods = podDepths.map((z, i) => {
   const size = podScales[i] * 2.6;
   const geo = new THREE.PlaneGeometry(size, size * 0.62);
