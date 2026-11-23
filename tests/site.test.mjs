@@ -1,0 +1,160 @@
+// Browser checks on the built site. Run "npm run build" first. Other hosts are blocked and nothing is sent.
+import { test, before, after } from 'node:test'
+import assert from 'node:assert/strict'
+import { createServer } from 'node:http'
+import { existsSync, readFileSync, statSync, globSync, mkdtempSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { extname, join, resolve } from 'node:path'
+import { chromium } from 'playwright-core'
+const DIST = resolve(process.env.DIST ?? 'dist'), TYPE = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.json': 'application/json', '.woff2': 'font/woff2' }
+let server, base, browser, missing = ''
+const LANGS = ['', 'ar/', 'ur/', 'zh/']
+const PAGES = globSync('**/*.html', { cwd: DIST }).filter(f => !f.startsWith('google'))
+before(async () => {
+  server = createServer((q, r) => {
+    let f = join(DIST, decodeURIComponent(new URL(q.url, 'http://x').pathname)); if (existsSync(f) && statSync(f).isDirectory()) f = join(f, 'index.html')
+    if (!existsSync(f) || (missing && f.includes(missing))) { r.writeHead(404, { 'content-type': 'text/html' }); return r.end(readFileSync(join(DIST, '404.html'))) }
+    r.writeHead(200, { 'content-type': TYPE[extname(f)] ?? 'application/octet-stream' }); r.end(readFileSync(f))
+  }).listen(0, '127.0.0.1'); await new Promise(r => server.once('listening', r)); base = `http://127.0.0.1:${server.address().port}/`
+  // A test must never open the mail app or any other program on this computer
+  const stub = mkdtempSync(join(tmpdir(), 'no-open-')); writeFileSync(join(stub, 'xdg-open'), '#!/bin/sh\nexit 0\n', { mode: 0o755 })
+  browser = await chromium.launch({ env: { ...process.env, PATH: `${stub}:${process.env.PATH}` }, ...(process.env.CHROME ? { executablePath: process.env.CHROME } : { channel: 'chrome' }), args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] })
+})
+const answer = async (p, v) => { await p.locator(`.consent [data-v=${v}]`).click() }
+after(async () => { await browser?.close(); server?.closeAllConnections(); server?.close() })
+async function open(path, { w = 1440, h = 900, ...o } = {}) {
+  const { ask, ...rest } = o, c = await browser.newContext({ viewport: { width: w, height: h }, ...rest })
+  await c.route(u => u.hostname !== '127.0.0.1', r => r.abort())
+  const p = await c.newPage(); p.errors = []; p.on('pageerror', e => p.errors.push(e.message)); if (o.ask !== true) await c.addCookies([{ name: 'alx_consent', value: '1.no', url: base }]); await p.goto(base + path); return p
+}
+const ready = p => p.waitForFunction(() => document.documentElement.classList.contains('ready'), null, { timeout: 20000 })
+
+test('every page in every language links to Insights in its header', () => {
+  const bad = PAGES.filter(f => !(readFileSync(join(DIST, f), 'utf8').match(/<nav id="nav"[\s\S]*?<\/nav>/)?.[0] ?? '').includes('href="/insights/"'))
+  assert.ok(PAGES.length > 100); assert.deepEqual(bad, [])
+})
+test('the Insights link stays through pages, Back and language changes', async () => {
+  const p = await open('insights/'), seen = () => p.locator('header nav a[href="/insights/"]').isVisible()
+  assert.ok(await seen())
+  for (const x of ['products/', 'company/']) { await p.locator(`header nav a[href="/${x}"]`).click(); await p.waitForURL('**/' + x); assert.ok(await seen(), x) }
+  await p.goBack(); assert.ok(await seen(), 'back')
+  for (const l of ['ar', 'ur', 'zh']) { await p.locator('.lang summary').click(); await p.locator(`.lang a[lang="${l}"]`).click(); await p.waitForURL(`**/${l}/**`); assert.ok(await seen(), l) }
+  await p.context().close()
+})
+test('the header fits and nothing scrolls sideways', async () => {
+  const bad = []
+  for (const w of [390, 768, 901, 1024, 1080, 1440, 1920]) for (const l of LANGS) {
+    const p = await open(l + 'solutions/', { w })
+    const x = await p.evaluate(() => { const k = [...document.querySelectorAll('header nav > *')].filter(e => e.offsetParent), y = k.map(e => { const b = e.getBoundingClientRect(); return (b.top + b.bottom) / 2 }); return { over: document.documentElement.scrollWidth - innerWidth, spread: k.length ? Math.max(...y) - Math.min(...y) : 0, wrap: k.some(e => e.tagName === 'A' && e.getBoundingClientRect().height > 64), out: k.some(e => { const b = e.getBoundingClientRect(); return b.left < -1 || b.right > innerWidth + 1 }), meet: (() => { const a = document.querySelector('.logo').getBoundingClientRect(), b = document.getElementById('nav').getBoundingClientRect(); return b.width > 0 && innerWidth > 900 && a.left < b.right && b.left < a.right })() } })
+    if (x.over > 0 || x.out || x.meet || x.wrap || (w > 900 && x.spread > 8)) bad.push([w, l, x]); await p.context().close()
+  }
+  assert.deepEqual(bad, [])
+})
+test('the model returns after the browser takes the graphics away, also through Back', async () => {
+  const p = await open('products/'); await ready(p)
+  await p.evaluate(() => { const x = document.getElementById('world').getContext('webgl2').getExtension('WEBGL_lose_context'); x.loseContext(); setTimeout(() => x.restoreContext(), 300) })
+  await p.waitForTimeout(1200)
+  const ok = () => p.evaluate(() => !document.documentElement.classList.contains('no3d') && getComputedStyle(document.getElementById('world')).display !== 'none' && !document.getElementById('world').getContext('webgl2').isContextLost())
+  assert.ok(await ok(), 'after restore')
+  await p.locator('header nav a[href="/insights/"]').click(); await p.waitForURL('**/insights/'); await p.goBack(); await p.waitForTimeout(2500); assert.ok(await ok(), 'after Back'); assert.deepEqual(p.errors, []); await p.context().close()
+})
+test('without graphics every main page still shows the mark and no empty band', async () => {
+  for (const x of ['', 'products/', 'services/', 'company/']) {
+    const p = await open(x, { w: 390, h: 844 }); await ready(p); await p.evaluate(() => document.getElementById('world').getContext('webgl2').getExtension('WEBGL_lose_context').loseContext()); await p.waitForTimeout(300)
+    assert.ok(await p.locator('.flat').isVisible(), x); const top = await p.evaluate(() => document.querySelector('.flat').getBoundingClientRect().top - document.querySelector('header').getBoundingClientRect().bottom); assert.ok(top < 140, `${x} ${top}`); await p.context().close()
+  }
+})
+const pick = async (p, q) => { const i = p.locator(q).first(); await i.locator('xpath=..').locator('span').evaluate(e => e.scrollIntoView({ block: 'center', behavior: 'instant' })); await i.locator('xpath=..').locator('span').click(); assert.ok(await i.isChecked(), q) }
+const toStep = async (p, n) => {
+  await p.locator('[data-lead=""]').first().evaluate(e => e.click()); await p.locator('.lead-box[open]').waitFor()
+  const next = () => p.locator('.lead-nav .btn').click()
+  await pick(p, '[name=problem]'); if (await p.locator('[data-step="0"]').isVisible()) await next()
+  await p.locator('[data-step="1"]').waitFor(); if (n === 1) return
+  await p.fill('#l-story', 'A long enough description of the problem.'); await pick(p, '[name=impacts]'); await next(); await p.locator('[data-step="2"]').waitFor(); if (n === 2) return
+  for (const k of ['size', 'place', 'route']) await pick(p, `[name=${k}]`); await next(); await p.locator('[data-step="3"]').waitFor(); if (n === 3) return
+  for (const k of ['timing', 'budget', 'role']) await pick(p, `[name=${k}]`); await next(); await p.locator('[data-step="4"]').waitFor(); if (n === 4) return
+  for (const [k, v] of [['name', 'Test'], ['email', 'a@example.com'], ['company', 'Test'], ['country', 'Test']]) await p.fill(`#l-${k}`, v); await p.locator('[name=consent]').check(); await next(); await p.locator('[data-step="5"]').waitFor()
+}
+test('choosing answers never moves the form header or close button away', async () => {
+  const bad = []
+  for (const [w, h] of [[390, 667], [844, 390], [1024, 600], [1366, 640]]) for (const s of [2, 3]) {
+    const p = await open('products/', { w, h }); await toStep(p, s)
+    const chips = p.locator(`[data-step="${s}"] .ch span`), n = await chips.count()
+    for (const i of [0, Math.floor(n / 2), n - 1]) { await chips.nth(i).click(); await p.keyboard.press('ArrowUp'); await p.waitForTimeout(350) }
+    const x = await p.evaluate(() => ({ box: document.querySelector('.lead-box').scrollTop, grid: Math.round(document.querySelector('.lead-grid').getBoundingClientRect().top - document.querySelector('.lead-box').getBoundingClientRect().top) }))
+    if (x.box || Math.abs(x.grid) > 1) bad.push([w, h, s, x]); await p.context().close()
+  }
+  assert.deepEqual(bad, [])
+})
+test('a brief that could not be sent stays and can be sent again', async () => {
+  const p = await open('products/'), keys = []
+  await p.context().route('**/api/public/leads', r => { keys.push(r.request().postDataJSON()?.idempotencyKey); return r.abort() })
+  await toStep(p, 5); await p.locator('.lead-nav .btn').click(); await p.locator('.lead-done').waitFor()
+  await p.locator('.lead-done .again').click(); assert.ok(await p.locator('[data-step="5"]').isVisible())
+  await p.locator('.lead-nav .btn').click(); await p.locator('.lead-done').waitFor()
+  await p.locator('.lead-x').first().click(); await p.locator('header [data-lead]').click(); await p.locator('.lead-box[open]').waitFor()
+  assert.equal(await p.locator('#l-story').inputValue(), 'A long enough description of the problem.'); assert.equal(new Set(keys).size, 1); assert.equal(keys.length, 2); await p.context().close()
+})
+test('Contact us works on the not found page and never locks scrolling', async () => {
+  const p = await open('404.html')
+  for (let i = 0; i < 2; i++) { await p.locator('header [data-lead]').click(); await p.locator('.lead-box[open]').waitFor({ timeout: 5000 }); await p.locator('.lead-x').first().click(); await p.waitForTimeout(300); assert.equal(await p.evaluate(() => document.documentElement.style.overflow), '') }
+  assert.deepEqual(p.errors, []); await p.context().close()
+})
+test('keyboard focus is visible on main buttons', async () => {
+  const p = await open('services/'), b = p.locator('header .btn'); const a = await b.screenshot(); await p.locator('.lang summary').focus(); await p.keyboard.press('Tab'); assert.ok(await b.evaluate(e => e === document.activeElement)); const c = await b.screenshot(); assert.notDeepEqual(a, c); await p.context().close()
+})
+test('the language menu is closed when Back returns to the page', async () => {
+  const p = await open('services/'); await p.locator('.lang summary').click(); await p.evaluate(() => dispatchEvent(new PageTransitionEvent('pagehide', { persisted: true }))); assert.equal(await p.locator('details.lang').evaluate(e => e.open), false); await p.context().close()
+})
+test('a restored deployment choice matches its explanation', async () => {
+  const p = await open('approach/'); await p.evaluate(() => { document.querySelector('[value=airgap]').checked = true; dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true })) })
+  assert.equal(await p.locator('#deploy-out').innerHTML(), await p.evaluate(() => JSON.parse(document.getElementById('i18n').textContent).inf.airgap[1])); await p.context().close()
+})
+test('with reduced motion the model follows a choice', async () => {
+  const p = await open('products/', { reducedMotion: 'reduce' }); await ready(p); await p.locator('#nova').scrollIntoViewIfNeeded(); await p.waitForTimeout(2500)
+  const n = await p.evaluate(async () => { const g = document.getElementById('world').getContext('webgl2'); let f = new Set(), o = g.drawElements.bind(g), q = 0; g.drawElements = (...a) => { f.add(performance.now() | 0); q++; return o(...a) }; document.getElementById('t-2').click(); const t = performance.now(); let ticks = 0, seen = 0; while (performance.now() - t < 1500) { const b = q; await new Promise(requestAnimationFrame); ticks++; if (q > b) seen++ } return seen })
+  assert.ok(n > 3, `frames ${n}`); await p.context().close()
+})
+test('a missing file after a release reloads once, not forever', async () => {
+  const p = await open(''); await ready(p); let loads = 0; p.on('load', () => loads++)
+  missing = globSync('assets/lead-*.js', { cwd: DIST })[0]
+  try { await p.locator('header [data-lead]').click(); await p.waitForTimeout(2500); assert.equal(loads, 1); await p.locator('header [data-lead]').click(); await p.waitForURL('**/contact/') } finally { missing = '' }
+  await p.context().close()
+})
+test('no cookies, no local storage and no third party requests', async () => {
+  const bad = []
+  for (const x of ['', 'insights/', 'ar/', 'contact/', 'privacy.html']) { const c = await browser.newContext(), p = await c.newPage(); await c.route(u => u.hostname !== '127.0.0.1', r => { bad.push(r.request().url()); return r.abort() }); await p.goto(base + x); await p.waitForTimeout(800); if ((await c.cookies()).length || await p.evaluate(() => localStorage.length)) bad.push(x); await c.close() }
+  assert.deepEqual(bad, [])
+})
+const hits = async p => { const h = []; await p.context().route('**/api/public/hit', r => { if (r.request().method() === 'POST') h.push(r.request().postDataJSON()); return r.fulfill({ status: 204, headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': 'content-type' } }) }); return h }
+test('nothing is counted before a choice or after Reject, and the choice is kept', async () => {
+  const p = await open('insights/', { ask: true }), h = await hits(p); await p.waitForTimeout(600); assert.equal(h.length, 0); assert.equal((await p.context().cookies()).length, 0)
+  const [a, b] = await p.locator('.consent-b button').all(), x = await a.boundingBox(), y = await b.boundingBox(); assert.equal(x.width, y.width); assert.equal(x.height, y.height)
+  await answer(p, 'no'); await p.locator('header nav a[href="/products/"]').click(); await p.waitForURL('**/products/'); await p.waitForTimeout(600); assert.equal(h.length, 0); assert.equal(await p.locator('.consent').count(), 0)
+  const c = await p.context().cookies(); assert.deepEqual([c.length, c[0].name, c[0].value, c[0].sameSite], [1, 'alx_consent', '1.no', 'Lax']); await p.context().close()
+})
+test('Accept counts visits without personal data and can be withdrawn', async () => {
+  const p = await open('insights/', { ask: true }), h = await hits(p); await answer(p, 'yes'); await p.waitForTimeout(500); assert.equal(h.length, 1); assert.deepEqual(Object.keys(h[0]).sort(), ['device', 'event', 'language', 'path', 'source']); assert.equal(h[0].path, '/insights/')
+  await p.locator('header nav a[href="/company/"]').click(); await p.waitForURL('**/company/'); await p.waitForTimeout(500); assert.equal(h.length, 2)
+  await p.locator('header [data-lead]').click(); await p.locator('.lead-box[open]').waitFor(); assert.equal(h.at(-1).event, 'form_open'); await p.locator('.lead-x').first().click()
+  const n = h.length; await p.locator('footer [data-consent]').click(); await answer(p, 'no'); await p.reload(); await p.waitForTimeout(600); assert.equal(h.length, n); await p.context().close()
+})
+test('a browser privacy signal is a rejection', async () => {
+  const c = await browser.newContext(); await c.addInitScript(() => Object.defineProperty(navigator, 'globalPrivacyControl', { value: true })); await c.route(u => u.hostname !== '127.0.0.1', r => r.abort()); const p = await c.newPage(), h = await hits(p); await p.goto(base); await p.waitForTimeout(600); assert.equal(await p.locator('.consent').count(), 0); assert.equal(h.length, 0); await c.close()
+})
+test('the choice is offered in every language and fits small screens', async () => {
+  for (const l of LANGS) { const p = await open(l + 'services/', { ask: true, w: 360, h: 640 }), b = await p.locator('.consent').boundingBox(); assert.ok(b.x >= 0 && b.x + b.width <= 360 && b.y >= 0 && b.y + b.height <= 640, l + JSON.stringify(b)); await p.context().close() }
+})
+test('the consent bar never covers the main button of a page', async () => {
+  const bad = []
+  for (const x of ['', 'services/', 'products/', 'ar/', 'ur/company/', 'zh/']) { const p = await open(x, { ask: true }); const b = await p.locator('.hero .btn').boundingBox(), c = await p.locator('.consent').boundingBox(); if (b.y + b.height > c.y) bad.push([x, b.y + b.height, c.y]); await p.context().close() }
+  assert.deepEqual(bad, [])
+})
+test('the background moves, and stays still when less motion is asked for', async () => {
+  for (const [m, n] of [['no-preference', true], ['reduce', false]]) { const p = await open('insights/', { reducedMotion: m }); assert.equal(await p.evaluate(() => document.getAnimations().some(a => /breathe|run|via/.test(a.animationName))), n); await p.context().close() }
+})
+test('every internal link and file exists', () => {
+  const bad = new Set(); let n = 0
+  for (const f of PAGES) for (const m of readFileSync(join(DIST, f), 'utf8').matchAll(/\s(?:href|src|data-u)="(\/[^"]*)"/g)) { n++; const path = decodeURIComponent(m[1].split(/[?#]/)[0]), file = join(DIST, path.endsWith('/') ? path + 'index.html' : path); if (!existsSync(file) || statSync(file).isDirectory()) bad.add(`${f} ${path}`) }
+  assert.ok(n > 5000); assert.deepEqual([...bad], [])
+})

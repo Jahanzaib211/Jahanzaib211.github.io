@@ -13,7 +13,7 @@ export function createWorld(canvas: HTMLCanvasElement, reduced: boolean): World 
   r.setPixelRatio(Math.min(devicePixelRatio, small ? 1.5 : 1.75))
   r.toneMapping = NoToneMapping; r.outputColorSpace = SRGBColorSpace
   const scene = new Scene(); scene.fog = new Fog(0x050a16, 8, 16)
-  const pm = new PMREMGenerator(r); scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture; scene.environmentIntensity = 0.12; pm.dispose()
+  const light = () => { const pm = new PMREMGenerator(r); scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture; scene.environmentIntensity = 0.12; pm.dispose() }; light()
   const cam = new PerspectiveCamera(36, 1, 0.1, 40); cam.position.z = 10
   scene.add(new HemisphereLight(0xb8dcff, 0x0a1c50, 1.5))
   const key = new DirectionalLight(0xffffff, 1.7); key.position.set(3, 5, 6); scene.add(key)
@@ -64,12 +64,12 @@ export function createWorld(canvas: HTMLCanvasElement, reduced: boolean): World 
   addEventListener('resize', size); addEventListener('scroll', locate, { passive: true })
   if (!reduced && matchMedia('(pointer:fine)').matches) addEventListener('pointermove', e => { mx = e.clientX / innerWidth - 0.5; my = e.clientY / innerHeight - 0.5 }, { passive: true })
 
-  let last = performance.now(), run = true, raf = 0
+  let last = performance.now(), run = true, raf = 0, until = 0, lost = false
   function frame(now: number) {
     if (!run) return
     raf = requestAnimationFrame(frame)
     const dt = Math.min((now - last) / 1000, 0.05); last = now
-    if (reduced && !dirty) return
+    if (reduced && !dirty && now > until) return
     const k1 = reduced ? 1 : 1 - Math.exp(-dt * 4), vh = innerHeight, unit = (2 * Math.tan((cam.fov * Math.PI) / 360) * cam.position.z) / vh
     const wide = innerWidth >= 900 || (vh < 520 && innerWidth > vh), fit = innerWidth >= 900 && cam.aspect < 1.5 ? 0.8 : 1, time = reduced ? 0 : now / 1000
     px += (mx - px) * Math.min(1, dt * 4); py += (my - py) * Math.min(1, dt * 4)
@@ -128,8 +128,13 @@ export function createWorld(canvas: HTMLCanvasElement, reduced: boolean): World 
   const prepare = () => { const n = queue.shift(); if (!n) return; const e = get(n); if (e) r.compile(e.m.root, cam, scene); later(prepare) }
   setTimeout(() => later(prepare), reduced ? 300 : 2400)
   if (!reduced) gsap.to(intro, { t: 1, duration: 2.2, ease: 'power2.out', delay: 0.15 })
-  document.addEventListener('visibilitychange', () => { run = !document.hidden; cancelAnimationFrame(raf); if (run) { last = performance.now(); raf = requestAnimationFrame(frame) } })
-  canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); run = false; document.documentElement.classList.add('no3d') })
-  const fl = (c: number) => { spark.color.set(c); flash.v = 1; gsap.to(flash, { v: 0, duration: 1.1, ease: 'power2.out' }); boost = reduced ? 0 : 1; dirty = true }
-  return { setForm(n) { override = n; target = n; canvas.dataset.form = n; dirty = true }, pulse() { fl(0x04d8fa) }, gate(ok) { fl(ok ? 0x22e59a : 0xff4d5e); get('loco')!.m.act?.(ok) }, act(n, v) { get(n)?.m.act?.(v); dirty = true } }
+  document.addEventListener('visibilitychange', () => { run = !document.hidden && !lost; cancelAnimationFrame(raf); if (run) { last = performance.now(); raf = requestAnimationFrame(frame) } })
+  canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); lost = true; run = false; cancelAnimationFrame(raf); document.documentElement.classList.add('no3d') })
+  // The browser can take the graphics away and give them back, also while the page waits behind Back
+  const recover = () => { if (!lost || r.getContext().isContextLost()) return; lost = false; document.documentElement.classList.remove('no3d'); light(); size(); run = !document.hidden; last = performance.now(); cancelAnimationFrame(raf); if (run) raf = requestAnimationFrame(frame) }
+  canvas.addEventListener('webglcontextrestored', recover); addEventListener('pageshow', recover)
+  // With reduced motion a model settles for a moment after a choice instead of flashing
+  const settle = (ms: number) => { until = performance.now() + ms; dirty = true }
+  const fl = (c: number) => { if (reduced) { settle(1800); return } spark.color.set(c); flash.v = 1; gsap.to(flash, { v: 0, duration: 1.1, ease: 'power2.out' }); boost = 1; dirty = true }
+  return { setForm(n) { override = n; target = n; canvas.dataset.form = n; dirty = true }, pulse() { fl(0x04d8fa) }, gate(ok) { fl(ok ? 0x22e59a : 0xff4d5e); get('loco')!.m.act?.(ok) }, act(n, v) { get(n)?.m.act?.(v); settle(1800) } }
 }
