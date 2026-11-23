@@ -1,4 +1,5 @@
 import { Group, Mesh, Object3D, BoxGeometry, CylinderGeometry, SphereGeometry, TorusGeometry, CapsuleGeometry, PlaneGeometry, MeshStandardMaterial, MeshPhysicalMaterial, MeshBasicMaterial, CanvasTexture, SRGBColorSpace, InstancedMesh, Color, Shape, ExtrudeGeometry, DoubleSide, TubeGeometry, CatmullRomCurve3, Vector3, AdditiveBlending, type BufferGeometry, type Material } from 'three'
+import { POLYS } from './formations'
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js'
 
 export interface Model { root: Group; parts: Object3D[]; tick?(t: number): void; act?(v: number | string | boolean): void; tilt: number; turn: number; s?: number }
@@ -179,6 +180,25 @@ function shop(): Model {
   const parts = [at(rb(4.2, 0.1, 2.6, M.floor), 0, -1.6, 0.1), at(bx(3.5, 2.9, 0.1, wall), 0, -0.1, -0.7), at(bx(0.1, 2.9, 1.3, wall), -1.72, -0.1, -0.1), at(bx(0.1, 2.9, 1.3, wall), 1.72, -0.1, -0.1), at(bx(3.6, 0.12, 1.6, M.steel), 0, 1.4, -0.05), goods, at(bx(2, 1.5, 0.03, M.glass), -0.62, -0.6, 0.66), at(bx(2.1, 0.3, 0.2, wall), -0.62, -1.42, 0.6), at(door, 1.05, -0.78, 0.6), at(awn, 0, 0.45, 1), at(grp(rb(2.6, 0.48, 0.1, M.steel, 0.04), at(new Mesh(new PlaneGeometry(2.5, 0.43), new MeshBasicMaterial({ map: sign.t })), 0, 0, 0.056)), 0, 1, 0.66), bulbs, at(plant(), -1.85, -1.4, 1.05), at(plant(), 1.85, -1.4, 1.05)]
   const m = model(parts, 0.14, -0.42, 0.92); m.act = v => { if (typeof v === 'string') accent.color.set(v as unknown as Color) }; return m
 }
-export const makers: Record<string, () => Model> = { build, own, innovate: chip, onprem, cloud, airgap, bots, nova, loco: gpu, storeloom: shop, desk }
+// The four product marks around the company mark
+function marks(): Model {
+  const fine = (c: number) => std(c, { metalness: 0.2, roughness: 0.35, emissive: c, emissiveIntensity: 0.18 }), ex = (s: Shape, m: Material, d = 0.16) => { const g = new ExtrudeGeometry(s, { depth: d, bevelEnabled: true, bevelSize: 0.015, bevelThickness: 0.02, bevelSegments: 2, curveSegments: 24 }); g.translate(0, 0, -d / 2); return new Mesh(g, m) }
+  const star = (r: number) => { const s = new Shape(), k = 0.3, j = 0.16; s.moveTo(0, r); s.bezierCurveTo(j * r, k * r, k * r, j * r, r, 0); s.bezierCurveTo(k * r, -j * r, j * r, -k * r, 0, -r); s.bezierCurveTo(-j * r, -k * r, -k * r, -j * r, -r, 0); s.bezierCurveTo(-k * r, j * r, -j * r, k * r, 0, r); return s }
+  const hexa = (r: number) => Array.from({ length: 6 }, (_, i) => [Math.sin(i * Math.PI / 3) * r, Math.cos(i * Math.PI / 3) * r] as const), path = (p: readonly (readonly number[])[]) => { const s = new Shape(); p.forEach((v, i) => i ? s.lineTo(v[0], v[1]) : s.moveTo(v[0], v[1])); s.closePath(); return s }
+  const blue = fine(0x0a7cff), cyan = fine(0x04d8fa), violet = fine(0x6f6bff), green = fine(0x22c98f)
+  const orbit = new Mesh(new TorusGeometry(0.78, 0.035, 12, 64), cyan); orbit.scale.set(1, 0.42, 1); orbit.rotation.z = 0.42
+  const eyes = [-0.1, 0.1].map(x => at(new Mesh(new CapsuleGeometry(0.035, 0.13, 6, 12), M.white), x, 0, 0.11))
+  const bots = grp(ex(star(0.66), violet), orbit, at(new Mesh(new SphereGeometry(0.1, 20, 20), cyan), 0.68, 0.36, 0), ...eyes)
+  const novaM = grp(at(ex(star(0.68), blue), -0.08, -0.06, 0), at(ex(star(0.24), cyan), 0.52, 0.48, 0))
+  const hs = path(hexa(0.76)); hs.holes.push(path([...hexa(0.64)].reverse())); const loco = grp(ex(hs, blue), new Mesh(new TorusGeometry(0.31, 0.05, 14, 48), cyan), at(bx(0.56, 0.07, 0.07, M.white), 0, 0, 0), at(new Mesh(new SphereGeometry(0.13, 24, 24), green), 0.3, 0, 0))
+  const bag = path([[-0.62, 0.34], [0.62, 0.34], [0.5, -0.7], [-0.5, -0.7]]); bag.holes.push(path([[-0.51, 0.24], [-0.42, -0.6], [0.42, -0.6], [0.51, 0.24]])); const handle = at(new Mesh(new TorusGeometry(0.28, 0.05, 12, 40, Math.PI), cyan), 0, 0.36, 0), cells = [[-0.2, 0.06], [0.14, 0.06], [-0.03, -0.17], [0.28, -0.17], [-0.19, -0.4], [0.12, -0.4]].map(([x, y]) => at(rb(0.15, 0.17, 0.12, cyan, 0.02), x, y, 0)), store = grp(ex(bag, blue), handle, ...cells)
+  const icons = [bots, novaM, loco, store], P = [[-1.12, 1.02], [1.12, 1.02], [-1.12, -1.02], [1.12, -1.02]], ax = new Group(), tone = [blue, fine(0x0252d8), fine(0x0266e8), fine(0x0298ff), cyan]
+  POLYS.forEach((p, i) => ax.add(ex(path(p.map(([x, y]) => [(x - 726) / 700, (332 - y) / 700])), tone[i], 0.14))); ax.scale.setScalar(0.001)
+  let on = -1, spread = 1, mid = 0
+  const m = model([...icons.map((g, i) => at(g, P[i][0], P[i][1], 0)), ax], 0.02, -0.22, 1)
+  m.tick = t => { const all = on === 4; spread += ((all ? 1.22 : 1) - spread) * 0.05; mid += ((all ? 1 : 0) - mid) * 0.06; ax.scale.setScalar(Math.max(0.001, mid * 0.95)); icons.forEach((g, i) => { if (!g.userData.in) return; const hit = on === i, q = g.userData.k ?? 1, k = q + ((hit ? 1.28 : all || on < 0 ? 1 : 0.74) - q) * 0.08; g.userData.k = k; g.scale.setScalar(k * (all ? 0.86 : 1)); g.position.set(P[i][0] * spread, P[i][1] * spread + Math.sin(t * 1.1 + i * 1.5) * 0.04, hit ? 0.35 : 0); g.rotation.y = Math.sin(t * 0.8 + i) * 0.18 }) }
+  m.act = v => { on = Number(v) }; return m
+}
+export const makers: Record<string, () => Model> = { build, own, innovate: chip, onprem, cloud, airgap, bots, nova, loco: gpu, storeloom: shop, desk, marks }
 // Warm light spill under a model
 export function halo() { const c = canvas(256, 256, x => { const g = x.createRadialGradient(128, 128, 0, 128, 128, 128); g.addColorStop(0, 'rgba(2,104,244,.5)'); g.addColorStop(1, 'rgba(2,104,244,0)'); x.fillStyle = g; x.fillRect(0, 0, 256, 256) }); const m = new Mesh(new PlaneGeometry(6.4, 6.4), new MeshBasicMaterial({ map: c.t, transparent: true, depthWrite: false, blending: AdditiveBlending })); m.rotation.x = -Math.PI / 2; return m }

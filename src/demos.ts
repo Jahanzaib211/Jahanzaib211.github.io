@@ -80,4 +80,17 @@ function solutions() {
   const sec = $('#solutions'), ask = $<HTMLAnchorElement>('#sol-ask')
   $$<HTMLInputElement>('input[name=sol]').forEach(i => i.addEventListener('change', () => { world?.setForm('desk'); world?.act('desk', +i.value); world?.pulse(); ask.href = i.dataset.m! }))
 }
-export function startDemos() { solutions(); deployment(); bots(); nova(); loco(); store() }
+function founder() {
+  const el = $$<HTMLElement>('#founder [data-mark]'); if (!el.length) return
+  let cur = -2, wait = false
+  const pick = () => {
+    wait = false; const line = innerHeight * 0.6, b = el.map(e => e.getBoundingClientRect()); let n = -1
+    b.forEach((r, i) => { if (r.top < line) n = +el[i].dataset.mark! })
+    if (n === cur) return
+    cur = n; world?.act('marks', n); el.forEach(e => e.classList.toggle('on', +e.dataset.mark! === n))
+  }
+  addEventListener('scroll', () => { if (!wait) { wait = true; requestAnimationFrame(pick) } }, { passive: true })
+  el.slice(0, 4).forEach(e => { const go = () => world?.act('marks', +e.dataset.mark!), back = () => { cur = -2; pick() }; e.addEventListener('pointerenter', go); e.addEventListener('pointerleave', back); e.addEventListener('focusin', go); e.addEventListener('focusout', back) })
+  pick()
+}
+export function startDemos() { founder(); solutions(); deployment(); bots(); nova(); loco(); store() }
