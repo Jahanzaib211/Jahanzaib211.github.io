@@ -78,10 +78,12 @@ for (const l of L) {
   writeFileSync(dir + 'index.html', page(l, '', t.title, t.desc, m, { home: true }))
   P.forEach((k, i) => {
     const s = t.st[k], nx = P[(i + 1) % 4], title = t.pt.replace('{n}', N[k])
-    writeFileSync(`${dir}products/${k}.html`, page(l, `products/${k}.html`, title, s[0], `<main id="main"><article class="wrap story-page"><div class="story-top"><div><h1 dir="ltr">${N[k]}</h1><p>${s[0]}</p></div><img src="/brand/${k}-mark.svg" alt="" width="256" height="256"></div>
-${[0, 1, 2].map(n => `<section class="chapter"><h2>${t.ch[n]}</h2><div><p>${s[n + 1]}</p></div></section>`).join('\n')}
-<section class="chapter"><h2>${t.ch[3]}</h2><div><ul>${s[4].map(x => `<li>${x}</li>`).join('')}</ul>${CODE[k] ? `<p><a class="link" href="${CODE[k]}">${t.src}</a></p>` : ''}</div></section>
-<div class="next"><a class="btn" href="${mail(N[k] + ' private demo request')}" data-lead="${N[k]} private demo">${t.demo}</a><a class="link" href="${r}products/${nx}.html">${t.next.replace('{n}', N[nx])}</a></div></article></main>`))
+    writeFileSync(`${dir}products/${k}.html`, page(l, `products/${k}.html`, title, s[0], `<canvas id="world" aria-hidden="true"></canvas>
+<main id="main"><article class="wrap story-page" data-product="${['bots', 'nova', 'loco', 'storeloom'][i]}"><div class="story-col">
+<section class="story-top" data-form="${['bots', 'nova', 'loco', 'storeloom'][i]}" data-side="1"><img src="/brand/${k}-mark.svg" alt="" width="256" height="256"><h1 dir="ltr">${N[k]}</h1><p>${s[0]}</p></section>
+${[0, 1, 2].map(n => `<section class="chapter" data-ch="${n}"><h2>${t.ch[n]}</h2><p>${s[n + 1]}</p></section>`).join('\n')}
+<section class="chapter" data-ch="3"><h2>${t.ch[3]}</h2><ul>${s[4].map(x => `<li>${x}</li>`).join('')}</ul>${CODE[k] ? `<p><a class="link" href="${CODE[k]}">${t.src}</a></p>` : ''}</section>
+<div class="next"><a class="btn" href="${mail(N[k] + ' private demo request')}" data-lead="${N[k]} private demo">${t.demo}</a><a class="link" href="${r}products/${nx}.html">${t.next.replace('{n}', N[nx])}</a></div></div></article></main>`))
   })
 }
 for (const [f, title] of [['privacy', 'Privacy policy'], ['terms', 'Terms of use'], ['404', 'Page not found']])

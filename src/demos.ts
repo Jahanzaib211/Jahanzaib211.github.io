@@ -91,6 +91,15 @@ function founder() {
   }
   addEventListener('scroll', () => { if (!wait) { wait = true; requestAnimationFrame(pick) } }, { passive: true })
   el.slice(0, 4).forEach(e => { const go = () => world?.act('marks', +e.dataset.mark!), back = () => { cur = -2; pick() }; e.addEventListener('pointerenter', go); e.addEventListener('pointerleave', back); e.addEventListener('focusin', go); e.addEventListener('focusout', back) })
-  pick()
+  addEventListener('world-ready', () => { cur = -2; pick() }); pick()
 }
 export function startDemos() { founder(); solutions(); deployment(); bots(); nova(); loco(); store() }
+// Product pages: the model answers each chapter as it is read
+export function startStory() {
+  const page = $<HTMLElement>('[data-product]'); if (!page) return
+  const form = page.dataset.product!, ch = $$<HTMLElement>('[data-ch]', page)
+  const say: Record<string, (string | number)[]> = { bots: [0, 1, 2, 3, -1], nova: [0, 1, 3, 5, 0], loco: [0.15, 0.4, 0.75, 1, 0], storeloom: ['#0b7a5b', '#7a3ef0', '#0268f4', '#04a9d6', '#0268f4'] }
+  let cur = -2, wait = false
+  const pick = () => { wait = false; let n = -1; ch.forEach((e, i) => { if (e.getBoundingClientRect().top < innerHeight * 0.6) n = i }); if (n === cur) return; cur = n; world?.act(form, say[form][n < 0 ? 4 : n]) }
+  addEventListener('scroll', () => { if (!wait) { wait = true; requestAnimationFrame(pick) } }, { passive: true }); addEventListener('world-ready', () => { cur = -2; pick() })
+}

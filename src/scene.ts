@@ -46,13 +46,14 @@ export function createWorld(canvas: HTMLCanvasElement, reduced: boolean): World 
   }
   const base = new Map<Object3D, Vector3>(), glowPlane = halo(); glowPlane.position.y = -1.95; root.add(glowPlane)
   const sections: Stop[] = [...document.querySelectorAll<HTMLElement>('[data-form]')].map(el => ({ el, form: el.dataset.form!, side: Number(el.dataset.side ?? 1) * (document.dir === 'rtl' ? -1 : 1) }))
-  let target = 'logo', override = '', cur = sections[0], logoW = 1, x = 0, px = 0, py = 0, mx = 0, my = 0, spin = 0, lean = 0, yy = 0, sc = 0.62, boost = 0, dirty = true
+  let target = sections[0]?.form ?? 'logo', override = '', cur = sections[0], logoW = sections[0]?.form === 'logo' ? 1 : 0, x = 0, px = 0, py = 0, mx = 0, my = 0, spin = 0, lean = 0, yy = 0, sc = 0.62, boost = 0, dirty = true
   const flash = { v: 0 }
+  const home = sections[0]?.form === 'logo'
   const locate = () => {
     const mid = innerHeight * 0.52; let best = sections[0], d = 1e9
     for (const s of sections) { const b = s.el.getBoundingClientRect(), k = Math.abs((b.top + b.bottom) / 2 - mid); if (k < d) { d = k; best = s } }
     if (best !== cur) { cur = best; override = '' }
-    target = override || (cur.el.dataset.active ?? cur.form); dirty = true
+    target = override || (cur.el.dataset.active ?? cur.form); canvas.dataset.form = target; dirty = true
   }
   const size = () => {
     r.setSize(innerWidth, innerHeight, false); cam.aspect = innerWidth / innerHeight
@@ -70,7 +71,7 @@ export function createWorld(canvas: HTMLCanvasElement, reduced: boolean): World 
     const isLogo = target === 'logo', k1 = reduced ? 1 : 1 - Math.exp(-dt * 4)
     const wide = innerWidth >= 900
     logoW += ((isLogo ? 1 : 0) - logoW) * (reduced ? 1 : 1 - Math.exp(-dt * 5))
-    x += ((wide ? cur.side * (cur === sections[0] ? 2.55 : 2.25) * Math.min(cam.aspect / 1.7, 1.1) : 0) - x) * k1
+    x += ((wide ? cur.side * (cur === sections[0] && home ? 2.55 : 2.25) * Math.min(cam.aspect / 1.7, 1.1) : 0) - x) * k1
     px += (mx - px) * Math.min(1, dt * 4); py += (my - py) * Math.min(1, dt * 4)
     const mod = made.get(target)?.m
     const ty = isLogo ? 0 : (mod?.turn ?? -0.4) * (x < 0 ? -1 : 1) + (reduced ? 0 : Math.sin(now / 2600) * 0.16), tx = isLogo ? 0 : mod?.tilt ?? 0.2
@@ -109,9 +110,14 @@ export function createWorld(canvas: HTMLCanvasElement, reduced: boolean): World 
     r.render(scene, cam); dirty = false
   }
   size(); requestAnimationFrame(frame)
+  // Build the remaining models while the visitor reads, one per idle moment
+  const queue = [...new Set(sections.map(s => s.form))].concat(home ? ['cloud', 'airgap'] : []).filter(n => n !== 'logo')
+  const later = (f: () => void) => ('requestIdleCallback' in window ? requestIdleCallback(f, { timeout: 2500 }) : setTimeout(f, 400))
+  const prepare = () => { const n = queue.shift(); if (!n) return; const e = get(n); if (e) r.compile(e.m.root, cam, scene); later(prepare) }
+  setTimeout(() => later(prepare), reduced ? 300 : 2400)
   if (!reduced) gsap.to(intro, { t: 1, duration: 2.2, ease: 'power2.out', delay: 0.15 })
   document.addEventListener('visibilitychange', () => { run = !document.hidden; if (run) { last = performance.now(); requestAnimationFrame(frame) } })
   canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); run = false; document.documentElement.classList.add('no3d') })
   const fl = (c: number) => { spark.color.set(c); flash.v = 1; gsap.to(flash, { v: 0, duration: 1.1, ease: 'power2.out' }); boost = reduced ? 0 : 1; dirty = true }
-  return { setForm(n) { override = n; target = n; dirty = true }, pulse() { fl(0x04d8fa) }, gate(ok) { fl(ok ? 0x22e59a : 0xff4d5e); get('loco')!.m.act?.(ok) }, act(n, v) { get(n)?.m.act?.(v); dirty = true } }
+  return { setForm(n) { override = n; target = n; canvas.dataset.form = n; dirty = true }, pulse() { fl(0x04d8fa) }, gate(ok) { fl(ok ? 0x22e59a : 0xff4d5e); get('loco')!.m.act?.(ok) }, act(n, v) { get(n)?.m.act?.(v); dirty = true } }
 }

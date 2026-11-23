@@ -1,5 +1,5 @@
 import './style.css'
-import { startDemos, attach } from './demos'
+import { startDemos, startStory, attach } from './demos'
 const root = document.documentElement; root.classList.add('js')
 const menu = document.querySelector<HTMLButtonElement>('.menu')!, nav = document.getElementById('nav')!
 const set = (o: boolean) => { nav.classList.toggle('open', o); menu.setAttribute('aria-expanded', String(o)); menu.textContent = o ? menu.dataset.close! : menu.dataset.open! }
@@ -8,10 +8,10 @@ nav.addEventListener('click', e => { if ((e.target as HTMLElement).closest('a'))
 addEventListener('keydown', e => { if (e.key === 'Escape' && nav.classList.contains('open')) { set(false); menu.focus() } })
 const canvas = document.querySelector<HTMLCanvasElement>('#world')
 if (canvas) {
-  startDemos()
+  if (document.getElementById('solutions')) startDemos(); else startStory()
   const off = () => root.classList.add('no3d')
   const gl = (() => { try { return !!document.createElement('canvas').getContext('webgl2') } catch { return false } })()
-  const start = () => import('./scene').then(m => { attach(m.createWorld(canvas, matchMedia('(prefers-reduced-motion:reduce)').matches)); root.classList.add('ready') }).catch(off)
+  const start = () => import('./scene').then(m => { attach(m.createWorld(canvas, matchMedia('(prefers-reduced-motion:reduce)').matches)); root.classList.add('ready'); dispatchEvent(new Event('world-ready')) }).catch(off)
   if (!gl) off(); else if ('requestIdleCallback' in window) requestIdleCallback(start, { timeout: 900 }); else setTimeout(start, 200)
 }
 
