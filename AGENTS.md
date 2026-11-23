@@ -12,3 +12,6 @@ Owner: ALI LABS X (PRIVATE) LIMITED. This is the company site, replacing the fou
 - Products are not advertised as live. Use "Request a private demo" and the product story. Solutions name the problem, never the underlying technology.
 - Vite, TypeScript, Three.js, self-hosted fonts, no trackers. Update privacy.html before adding any third-party script, form or cookie.
 - `main` publishes to alilabsx.com. Work on a branch; merge only when the owner approves.
+
+## Content
+Solution pages come from `content/solutions.mjs`, articles from `content/insights.mjs`, company pages from `content/*.part.html`. After Chinese text changes rerun `scripts/subset-chinese.mjs`. After title changes rerun `scripts/share-images.mjs`. Publish an article only if a likely client would search for it and the facts are checked.

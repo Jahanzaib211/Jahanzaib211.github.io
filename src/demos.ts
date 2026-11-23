@@ -80,7 +80,7 @@ function store() {
 function solutions() {
   const ask = $<HTMLAnchorElement>('#sol-ask')!, all = $$<HTMLInputElement>('input[name=sol]'), rows = all.map(i => i.closest<HTMLElement>('label')!)
   let cur = 0, hold = 0, wait = false
-  const show = (n: number) => { if (n === cur) return; cur = n; all[n].checked = true; rows.forEach((r, i) => r.toggleAttribute('data-pin', i === n)); ask.href = all[n].dataset.m!; world?.act('desk', n) }
+  const show = (n: number) => { if (n === cur) return; cur = n; all[n].checked = true; rows.forEach((r, i) => r.toggleAttribute('data-pin', i === n)); ask.href = all[n].dataset.m!; const rd = $<HTMLAnchorElement>('#sol-read'); if (rd) rd.href = all[n].dataset.u!; world?.act('desk', n) }
   const still = matchMedia('(prefers-reduced-motion:reduce)').matches
   all.forEach((i, n) => i.addEventListener('change', () => { hold = performance.now() + 1100; show(n); world?.pulse(); rows[n].scrollIntoView({ block: innerWidth > 900 ? 'center' : 'nearest', inline: 'center', behavior: still ? 'auto' : 'smooth' }) }))
   const pick = () => { wait = false; if (performance.now() < hold) return; const side = innerWidth <= 900, mid = (side ? innerWidth : innerHeight) * 0.5; let n = 0, d = 1e9; rows.forEach((r, i) => { const b = r.getBoundingClientRect(), k = Math.abs((side ? b.left + b.right : b.top + b.bottom) / 2 - mid); if (k < d) { d = k; n = i } })
@@ -119,7 +119,7 @@ export function startDemos() {
 function startStory() {
   const page = $<HTMLElement>('[data-product]'); if (!page) return
   const form = page.dataset.product!, ch = $$<HTMLElement>('[data-ch]', page)
-  const say: Record<string, (string | number)[]> = { bots: [0, 1, 2, 3, -1], nova: [0, 1, 3, 5, 0], loco: [0.15, 0.4, 0.75, 1, 0], storeloom: ['#0b7a5b', '#7a3ef0', '#0268f4', '#04a9d6', '#0268f4'] }
+  const say: Record<string, (string | number)[]> = { bots: [0, 1, 2, 3, -1], nova: [0, 1, 3, 5, 0], loco: [0.15, 0.4, 0.75, 1, 0], desk: Array(5).fill(Number(page.dataset.screen ?? 0)), storeloom: ['#0b7a5b', '#7a3ef0', '#0268f4', '#04a9d6', '#0268f4'] }
   let cur = -2, wait = false
   const pick = () => { wait = false; let n = -1; ch.forEach((e, i) => { if (e.getBoundingClientRect().top < innerHeight * 0.6) n = i }); if (n === cur) return; cur = n; world?.act(form, say[form][n < 0 ? 4 : n]) }
   addEventListener('scroll', () => { if (!wait) { wait = true; requestAnimationFrame(pick) } }, { passive: true }); addEventListener('world-ready', () => { cur = -2; pick() })
