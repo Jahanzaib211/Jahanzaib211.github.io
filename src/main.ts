@@ -1,8 +1,10 @@
 import './style.css'
+import { startAssist } from './assist'
 import { startDemos, startStory, attach } from './demos'
 const root = document.documentElement; root.classList.add('js')
 const menu = document.querySelector<HTMLButtonElement>('.menu')!, nav = document.getElementById('nav')!
 const set = (o: boolean) => { nav.classList.toggle('open', o); menu.setAttribute('aria-expanded', String(o)); menu.textContent = o ? menu.dataset.close! : menu.dataset.open! }
+if (document.getElementById('lead-text')) startAssist()
 menu.addEventListener('click', () => set(!nav.classList.contains('open')))
 nav.addEventListener('click', e => { if ((e.target as HTMLElement).closest('a')) set(false) })
 addEventListener('keydown', e => { if (e.key === 'Escape' && nav.classList.contains('open')) { set(false); menu.focus() } })

@@ -28,7 +28,7 @@ ${alt && !noindex ? L.map(x => `<link rel="alternate" hreflang="${x === 'zh' ? '
 <meta property="og:url" content="${url}">
 <meta property="og:image" content="${H}/og-image.png">
 <meta name="twitter:card" content="summary_large_image">
-${noindex ? '' : `<script type="application/json" id="lead-text">${JSON.stringify({ ...Object.fromEntries(Object.entries(t.lead).filter(([, v]) => typeof v === 'string')), name: t.name }).replace(/</g, '\\u003c')}</script>\n`}${home ? `<script type="application/ld+json">${ld}</script>\n<script type="application/json" id="i18n">${JSON.stringify({ js: t.js, inf: t.inf, ask: t.solAsk }).replace(/</g, '\\u003c')}</script>\n` : ''}<link rel="stylesheet" href="/src/style.css">
+${noindex ? '' : `<script type="application/json" id="lead-text">${JSON.stringify({ ...Object.fromEntries(Object.entries(t.lead).filter(([k, v]) => typeof v === 'string' || ['tips', 'more', 'nextP'].includes(k))), name: t.name }).replace(/</g, '\\u003c')}</script>\n`}${home ? `<script type="application/ld+json">${ld}</script>\n<script type="application/json" id="i18n">${JSON.stringify({ js: t.js, inf: t.inf, ask: t.solAsk }).replace(/</g, '\\u003c')}</script>\n` : ''}<link rel="stylesheet" href="/src/style.css">
 <script type="module" src="/src/main.ts"></script>
 </head>
 <body>

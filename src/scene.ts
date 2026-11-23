@@ -5,7 +5,7 @@ import { POLYS, toWorld } from './formations'
 import { makers, halo, type Model } from './models'
 
 export interface World { setForm(name: string): void; pulse(): void; gate(ok: boolean): void; act(name: string, v: number | string | boolean): void }
-interface Stop { el: HTMLElement; form: string; side: number }
+interface Stop { el: HTMLElement; text: HTMLElement; form: string; side: number }
 
 export function createWorld(canvas: HTMLCanvasElement, reduced: boolean): World {
   const small = innerWidth < 900
@@ -37,16 +37,17 @@ export function createWorld(canvas: HTMLCanvasElement, reduced: boolean): World 
   const intro = { t: reduced ? 1 : 0 }
 
   // Real models, built when first needed and assembled part by part
-  const made = new Map<string, { m: Model; w: number; home: Vector3[]; off: Vector3[]; spin: Vector3[] }>()
+  const made = new Map<string, { m: Model; pod: Group; w: number; home: Vector3[]; off: Vector3[]; spin: Vector3[] }>()
   const get = (n: string) => {
     let e = made.get(n); if (e || !makers[n]) return e
     const m = makers[n](), home = m.parts.map(o => o.position.clone())
     const off = home.map((h, i) => { const a = i * 2.4; return new Vector3(h.x * 0.9 + Math.cos(a) * 1.6, h.y * 0.9 + Math.sin(a * 1.3) * 1.8, h.z + Math.sin(a) * 1.8) })
-    e = { m, w: 0, home, off, spin: home.map((_, i) => new Vector3(Math.sin(i * 1.9) * 0.9, Math.cos(i * 2.7) * 1.1, 0)) }; m.root.visible = false; root.add(m.root); made.set(n, e); return e
+    const pod = new Group(), glow = halo(); glow.position.y = -1.95; pod.add(m.root, glow); pod.visible = false; scene.add(pod)
+    e = { m, pod, w: 0, home, off, spin: home.map((_, i) => new Vector3(Math.sin(i * 1.9) * 0.9, Math.cos(i * 2.7) * 1.1, 0)) }; made.set(n, e); return e
   }
-  const base = new Map<Object3D, Vector3>(), glowPlane = halo(); glowPlane.position.y = -1.95; root.add(glowPlane)
-  const sections: Stop[] = [...document.querySelectorAll<HTMLElement>('[data-form]')].map(el => ({ el, form: el.dataset.form!, side: Number(el.dataset.side ?? 1) * (document.dir === 'rtl' ? -1 : 1) }))
-  let target = sections[0]?.form ?? 'logo', override = '', cur = sections[0], logoW = sections[0]?.form === 'logo' ? 1 : 0, x = 0, px = 0, py = 0, mx = 0, my = 0, spin = 0, lean = 0, yy = 0, sc = 0.62, boost = 0, dirty = true
+  const base = new Map<Object3D, Vector3>()
+  const sections: Stop[] = [...document.querySelectorAll<HTMLElement>('[data-form]')].map(el => ({ el, text: el.closest<HTMLElement>('.story-col') ?? el.querySelector<HTMLElement>('.panel,.say-big,.f-col') ?? el, form: el.dataset.form!, side: Number(el.dataset.side ?? 1) * (document.dir === 'rtl' ? -1 : 1) }))
+  let target = sections[0]?.form ?? 'logo', override = '', cur = sections[0], logoW = sections[0]?.form === 'logo' ? 1 : 0, px = 0, py = 0, mx = 0, my = 0, sc = 0.62, boost = 0, dirty = true
   const flash = { v: 0 }
   const home = sections[0]?.form === 'logo'
   const locate = () => {
@@ -68,21 +69,29 @@ export function createWorld(canvas: HTMLCanvasElement, reduced: boolean): World 
     requestAnimationFrame(frame)
     const dt = Math.min((now - last) / 1000, 0.05); last = now
     if (reduced && !dirty) return
-    const isLogo = target === 'logo', k1 = reduced ? 1 : 1 - Math.exp(-dt * 4)
-    const wide = innerWidth >= 900
-    logoW += ((isLogo ? 1 : 0) - logoW) * (reduced ? 1 : 1 - Math.exp(-dt * 5))
-    x += ((wide ? cur.side * (cur === sections[0] && home ? 2.55 : 2.25) * Math.min(cam.aspect / 1.7, 1.1) : 0) - x) * k1
+    const k1 = reduced ? 1 : 1 - Math.exp(-dt * 4), vh = innerHeight, unit = (2 * Math.tan((cam.fov * Math.PI) / 360) * cam.position.z) / vh
+    const wide = innerWidth >= 900 || (vh < 520 && innerWidth > vh), fit = innerWidth >= 900 && cam.aspect < 1.5 ? 0.8 : 1, time = reduced ? 0 : now / 1000
     px += (mx - px) * Math.min(1, dt * 4); py += (my - py) * Math.min(1, dt * 4)
-    const mod = made.get(target)?.m
-    const ty = isLogo ? 0 : (mod?.turn ?? -0.4) * (x < 0 ? -1 : 1) + (reduced ? 0 : Math.sin(now / 2600) * 0.16), tx = isLogo ? 0 : mod?.tilt ?? 0.2
-    spin += (ty - spin) * k1; lean += (tx - lean) * k1
-    const end = isLogo && cur !== sections[0]
-    let goal = wide ? 0 : cur === sections[0] ? 2.2 : 2.3
-    if (end) { const h = cur.el.querySelector('h2')!.getBoundingClientRect(), top = cur.el.getBoundingClientRect().top, px1 = (2 * Math.tan((cam.fov * Math.PI) / 360) * cam.position.z) / innerHeight; goal = (innerHeight / 2 - (top + (h.top - top) * 0.52)) * px1; yy = goal } else yy += (goal - yy) * k1
-    sc += ((wide ? (isLogo ? (end ? 0.62 : 0.62) : 0.82) : isLogo ? (end ? 0.5 : 0.56) : 0.6) - sc) * k1
-    root.position.set(x, yy, 0)
-    root.scale.setScalar(sc)
-    root.rotation.set(lean + py * 0.28, spin + px * 0.65, 0)
+    // Where each section's writing is now. Its model is pinned to that place, so both move as one.
+    const placed = new Map<string, { y: number; side: number; on: boolean }>(); let logo: { y: number; x: number; s: number; on: boolean } | null = null
+    for (const s of sections) {
+      const box = s.el.getBoundingClientRect()
+      if (box.bottom < -vh || box.top > vh * 2) continue
+      if (s.form === 'logo') {
+        const first = s === sections[0]
+        if (first) { const at0 = box.top + scrollY, y = ((wide ? 0 : 2.2 / unit) + (at0 - box.top)) * unit, on = box.bottom > vh * 0.12; if (on || !logo) logo = { y, x: wide ? s.side * 2.55 * Math.min(cam.aspect / 1.7, 1.1) : 0, s: wide ? 0.62 * fit : 0.56, on } }
+        else { const h = s.el.querySelector('h2')!.getBoundingClientRect(), on = h.top < vh * 1.25; if (on) logo = { y: (vh / 2 - (box.top + (h.top - box.top) * 0.52)) * unit, x: 0, s: wide ? 0.62 : 0.5, on } }
+        continue
+      }
+      const name = s === cur && override ? override : (s.el.dataset.active ?? s.form); let c: number
+      if (wide) { const q = s.text.getBoundingClientRect(), half = Math.min(q.height / 2, vh * 0.36); c = Math.min(Math.max(vh / 2, q.top + half), q.bottom - half) }
+      else c = box.top + Math.min(vh * 0.3, 270) + (s.el.classList.contains('story-top') ? 0 : 30)
+      placed.set(name, { y: (vh / 2 - c) * unit, side: s.side, on: c > -vh * 0.2 && c < vh * 1.12 }); if (Math.abs(c - vh / 2) < vh * 1.4) get(name)
+    }
+    const isLogo = !!logo?.on
+    logoW += ((isLogo ? 1 : 0) - logoW) * (reduced ? 1 : 1 - Math.exp(-dt * 5))
+    if (logo) { root.position.set(logo.x, logo.y, 0); sc += (logo.s - sc) * (logoW < 0.05 ? 1 : k1) }
+    root.scale.setScalar(sc); root.rotation.set(py * 0.28, px * 0.65, 0)
     const it = intro.t
     ribbons.forEach((m, i) => {
       const s = scatter[i], e = 1 - MathUtils.clamp(it * 1.5 - i * 0.1, 0, 1), away = e * e * (3 - 2 * e) * 1.5 + (1 - logoW)
@@ -90,13 +99,12 @@ export function createWorld(canvas: HTMLCanvasElement, reduced: boolean): World 
       ;(m.material as MeshPhysicalMaterial).opacity = MathUtils.clamp(logoW * 1.6 - 0.5, 0, 1) * Math.min(1, it * 2.5); m.visible = logoW > 0.02
     })
     boost += (0 - boost) * Math.min(1, dt * 2.2)
-    const time = reduced ? 0 : now / 1000
-    if (!isLogo) get(target)
-    glowPlane.scale.setScalar(Math.max(0.001, 1 - logoW)); glowPlane.visible = logoW < 0.98
     made.forEach((e, n) => {
-      const on = n === target; e.w += ((on ? 1 : 0) - e.w) * (reduced ? 1 : 1 - Math.exp(-dt * (on ? 2.6 : 6)))
-      e.m.root.visible = e.w > 0.015; if (!e.m.root.visible) return
-      e.m.root.scale.setScalar(e.m.s ?? 1); e.m.tick?.(time)
+      const at = placed.get(n), on = !!at?.on; e.w += ((on ? 1 : 0) - e.w) * (reduced ? 1 : 1 - Math.exp(-dt * (on ? 2.8 : 5)))
+      e.pod.visible = e.w > 0.015; if (!e.pod.visible) return
+      if (at) { e.pod.position.set(wide ? at.side * 2.25 * Math.min(cam.aspect / 1.7, 1.1) : 0, at.y, 0); e.pod.scale.setScalar((wide ? 0.82 * fit : 0.6) * (e.m.s ?? 1)); e.pod.userData.side = at.side }
+      e.pod.rotation.set(e.m.tilt + py * 0.28, e.m.turn * ((e.pod.userData.side ?? 1) < 0 ? -1 : 1) + (reduced ? 0 : Math.sin(now / 2600) * 0.16) + px * 0.5, 0)
+      e.pod.children[1].scale.setScalar(Math.max(0.001, e.w)); e.m.tick?.(time)
       e.m.parts.forEach((o, i) => {
         const d = on ? (i / e.m.parts.length) * 0.35 : 0, k = MathUtils.clamp((e.w - d) / (1 - d - 0.02), 0, 1), q = k * k * (3 - 2 * k), v = 1 - q
         if (!base.has(o)) base.set(o, new Vector3(o.rotation.x, o.rotation.y, o.rotation.z))
