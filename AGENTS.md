@@ -10,7 +10,7 @@ Owner: ALI LABS X (PRIVATE) LIMITED. This is the company site, replacing the fou
 - Text lives in content/*.mjs (en, ar, ur, zh). scripts/pages.mjs generates the HTML, so never edit generated pages. Rerun scripts/subset-chinese.mjs after changing Chinese text.
 - One font family, Alexandria, with a Chinese companion. No colons, slashes, pipes or tag labels in visible copy.
 - Products are not advertised as live. Use "Request a private demo" and the product story. Solutions name the problem, never the underlying technology.
-- Vite, TypeScript, Three.js, self-hosted fonts, no third-party trackers. First-party analytics runs only after the visitor accepts (src/consent.ts). Update the privacy and cookies pages before adding any third-party script, form or cookie. Run `npm test` after `npm run build`.
+- Vite, TypeScript, Three.js, self-hosted fonts, no third-party trackers except Google Analytics G-612W223T3P (owner decision). All analytics runs only after the visitor accepts (src/consent.ts). Never also add GTM-NZKD7T8C; it holds the same stream. Raise the consent version when a service is added. Update the privacy and cookies pages before adding any third-party script, form or cookie. Run `npm test` after `npm run build`.
 - `main` publishes to alilabsx.com. Work on a branch; merge only when the owner approves.
 
 ## Content

@@ -13,8 +13,6 @@ const CODE = { 'nova-bots': 'https://github.com/Ali-Labs-X/nova-bots', nova: 'ht
 const root = l => (l === 'en' ? '/' : `/${l}/`), H = 'https://alilabsx.com', mail = s => `mailto:Jahanzaib@alilabsx.com?subject=${encodeURIComponent(s)}`
 const esc = s => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')
 const ic = (body, c = '') => `<svg class="ic${c ? ' ' + c : ''}" viewBox="0 0 24 24" aria-hidden="true">${body}</svg>`
-// Circuit traces behind the page, cut at the same angles as the logo
-const TRACES = ['M-20 150H40L90 100H210', 'M-20 790H50L100 840H330L400 920', 'M1460 110H1230L1150 190H980', 'M1460 420H1390L1340 470V560', 'M1460 720H1230L1140 810H900', 'M700 -20V90L770 160H880', 'M1330 920V860L1270 800'], TR = TRACES.map(d => `<path pathLength="100" d="${d}"/>`).join(''), VIA = [[210, 100], [980, 190], [1340, 560], [900, 810], [880, 160], [1270, 800]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="5"/>`).join('')
 const ORG = { '@type': 'Organization', '@id': H + '/#org', name: 'ALI LABS X', legalName: 'ALI LABS X (PRIVATE) LIMITED', url: H + '/', logo: H + '/brand/alx-mark.svg', email: 'Jahanzaib@alilabsx.com', telephone: '+923066422442', contactPoint: { '@type': 'ContactPoint', contactType: 'sales', telephone: '+923066422442', email: 'Jahanzaib@alilabsx.com', availableLanguage: ['en', 'ar', 'ur', 'zh'] }, sameAs: ['https://github.com/Ali-Labs-X'], foundingDate: '2026-11-18', founder: { '@type': 'Person', name: 'Jahanzaib Ali Ashraf', jobTitle: 'Founder and CEO', sameAs: ['https://www.linkedin.com/in/jahanzaib-ali-labsx', 'https://github.com/Jahanzaib211'] }, address: { '@type': 'PostalAddress', addressLocality: 'Lahore', addressRegion: 'Punjab', addressCountry: 'PK' } }
 const ORGS = { en: 'Home', ar: 'الرئيسية', ur: 'صفحہ اول', zh: '首页' }
 const graph = (l, url, title, desc, crumbs, extra) => JSON.stringify({ '@context': 'https://schema.org', '@graph': [ORG, { '@type': 'WebSite', '@id': H + '/#site', url: H + '/', name: 'ALI LABS X', publisher: { '@id': H + '/#org' }, inLanguage: ['en', 'ar', 'ur', 'zh-Hans'] }, { '@type': 'WebPage', '@id': url, url, name: title, description: desc, inLanguage: l === 'zh' ? 'zh-Hans' : l, isPartOf: { '@id': H + '/#site' }, about: { '@id': H + '/#org' } }, ...extra, ...(crumbs.length > 1 ? [{ '@type': 'BreadcrumbList', itemListElement: crumbs.map(([name, item], i) => ({ '@type': 'ListItem', position: i + 1, name, item })) }] : [])] }).replace(/</g, '\\u003c')
@@ -50,7 +48,8 @@ ${d3 ? `<script type="application/json" id="i18n">${JSON.stringify({ js: t.js, i
 <script type="module" src="/src/main.ts"></script>
 </head>
 <body>
-<div class="bg" aria-hidden="true"><i></i><i></i><svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice"><g class="tr">${TR}</g><g class="pu">${TR}</g><g class="vi">${VIA}</g></svg></div>
+<!--email_off-->
+<div class="bg" aria-hidden="true"><i></i><i></i><b></b><b></b></div>
 <a class="skip" href="#main">${t.skip}</a>
 <header><div class="wrap">
 <a class="logo" href="${r}"><img src="/brand/alx-mark.svg" alt="" width="62" height="28"><span dir="ltr">ALI LABS X<small>(PRIVATE) LIMITED</small></span></a>
@@ -61,6 +60,7 @@ ${main}
 <footer>${noindex ? '' : `<div class="wrap f-map"><nav aria-label="${t.nav[0]}"><b>${t.nav[0]}</b>${t.sol.map((x, i) => `<a href="${r}solutions/${SLUGS[i]}/">${x[1]}</a>`).join('')}</nav><nav aria-label="${t.nav[2]}"><b>${t.nav[2]}</b>${P.map(k => `<a dir="ltr" href="${r}products/${k}.html">${N[k]}</a>`).join('')}<b>${t.nav[4]}</b><a href="${r}company/">${t.founder.th}</a>${['enterprise', 'careers', 'contact'].map((k, i) => `<a href="/${k}/"${en}>${t.foot[i]}</a>`).join('')}<a href="/insights/"${en}>${UI[l].ins}</a></nav></div>`}<div class="wrap"><div><span dir="ltr">&copy; 2026 ALI LABS X (PRIVATE) LIMITED</span><br>${t.ft}</div>
 <nav aria-label="${t.foot[5]}"><a href="/privacy.html"${en}>${t.priv}</a><a href="/terms.html"${en}>${t.terms}</a><a href="/cookies/"${en}>${t.foot[4]}</a><a href="/security/"${en}>${t.foot[3]}</a><button type="button" data-consent>${CO[l].open}</button><a href="https://github.com/Ali-Labs-X">GitHub</a><a href="https://www.linkedin.com/in/jahanzaib-ali-labsx">LinkedIn</a></nav></div></footer>
 ${noindex ? '' : `<a class="wa" href="${WA(t)}" target="_blank" rel="noopener" aria-label="${t.wa}">${WI}</a>`}
+<!--/email_off-->
 </body>
 </html>
 `
@@ -127,7 +127,7 @@ ${[0, 1, 2].map(n => `<section class="chapter" data-ch="${n}"><h2>${t.ch[n]}</h2
   })
 }
 // Company pages, English only
-const INFO = { enterprise: ['Enterprise software partner, agreements and security, ALI LABS X', 'How ALI LABS X works with enterprise teams, including agreements, security review, deployment choices and supplier details.'], careers: ['Careers at ALI LABS X', 'Open roles at ALI LABS X and how to introduce yourself to the engineering team.'], contact: ['Contact ALI LABS X', 'Reach ALI LABS X by discovery form, WhatsApp or email to discuss software, private AI and infrastructure.'], security: ['Security at ALI LABS X', 'How this website and your enquiry are protected, and how to report a security concern to ALI LABS X.'], cookies: ['Cookies, ALI LABS X', 'The one cookie this website sets, what analytics counts if you accept, and how to change your choice.'] }
+const INFO = { enterprise: ['Enterprise software partner, agreements and security, ALI LABS X', 'How ALI LABS X works with enterprise teams, including agreements, security review, deployment choices and supplier details.'], careers: ['Careers at ALI LABS X', 'Open roles at ALI LABS X and how to introduce yourself to the engineering team.'], contact: ['Contact ALI LABS X', 'Reach ALI LABS X by discovery form, WhatsApp or email to discuss software, private AI and infrastructure.'], security: ['Security at ALI LABS X', 'How this website and your enquiry are protected, and how to report a security concern to ALI LABS X.'], cookies: ['Cookies, ALI LABS X', 'The cookies this website uses, what analytics counts if you accept, and how to change your choice.'] }
 for (const k in INFO) { mkdirSync(k, { recursive: true }); writeFileSync(`${k}/index.html`, page('en', `${k}/`, ...INFO[k], `<main id="main">${readFileSync(`content/${k}.part.html`, 'utf8')}</main>`, { alt: false })) }
 // Articles, English only
 const body = b => b.map(([k, v]) => k === 'l' ? `<ul>${v.map(x => `<li>${x}</li>`).join('')}</ul>` : k === 'h' ? `<h2>${v}</h2>` : `<p>${v}</p>`).join('\n'), E0 = T.en
