@@ -12,6 +12,7 @@ const LANGS = ['', 'ar/', 'ur/', 'zh/']
 const PAGES = globSync('**/*.html', { cwd: DIST }).filter(f => !f.startsWith('google'))
 before(async () => {
   server = createServer((q, r) => {
+    if (q.url === '/frame') { r.writeHead(200, { 'content-type': 'text/html' }); return r.end(`<iframe src="${base}" width="900" height="600"></iframe>`) }
     let f = join(DIST, decodeURIComponent(new URL(q.url, 'http://x').pathname)); if (existsSync(f) && statSync(f).isDirectory()) f = join(f, 'index.html')
     if (!existsSync(f) || (missing && f.includes(missing))) { r.writeHead(404, { 'content-type': 'text/html' }); return r.end(readFileSync(join(DIST, '404.html'))) }
     r.writeHead(200, { 'content-type': TYPE[extname(f)] ?? 'application/octet-stream' }); r.end(readFileSync(f))
@@ -180,8 +181,8 @@ test('company and policy pages exist in every language with the same parts as En
   }
 })
 test('another site cannot show the page in a frame', async () => {
-  const c = await browser.newContext(); await c.route('https://other.test/', r => r.fulfill({ contentType: 'text/html', body: `<iframe src="${base}" width="900" height="600"></iframe>` })); await c.route(u => !['127.0.0.1', 'other.test'].includes(u.hostname), r => r.abort())
-  const p = await c.newPage(); await p.goto('https://other.test/'); const f = p.frames().find(x => x.url().startsWith(base)); assert.ok(f); await f.waitForFunction(() => document.documentElement.classList.contains('framed'), null, { timeout: 8000 }); assert.equal(await f.evaluate(() => getComputedStyle(document.body).display), 'none'); await c.close()
+  const c = await browser.newContext(); await c.route(u => !['127.0.0.1', 'localhost'].includes(u.hostname), r => r.abort())
+  const p = await c.newPage(); await p.goto(base.replace('127.0.0.1', 'localhost') + 'frame'); let f; for (let i = 0; i < 40 && !f; i++) { f = p.frames().find(x => x.url().startsWith(base)); if (!f) await p.waitForTimeout(100) } assert.ok(f, p.frames().map(x => x.url()).join()); await f.waitForFunction(() => document.documentElement.classList.contains('framed'), null, { timeout: 8000 }); assert.equal(await f.evaluate(() => getComputedStyle(document.body).display), 'none'); await c.close()
 })
 test('every internal link and file exists', () => {
   const bad = new Set(); let n = 0
