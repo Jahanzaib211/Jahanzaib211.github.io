@@ -6,7 +6,7 @@ const P = ['nova-bots', 'nova', 'loco', 'storeloom'], N = { 'nova-bots': 'NOVA B
 const CODE = { 'nova-bots': 'https://github.com/Ali-Labs-X/nova-bots', nova: 'https://github.com/Ali-Labs-X/nova', loco: 'https://github.com/Ali-Labs-X/loco' }
 const root = l => (l === 'en' ? '/' : `/${l}/`), H = 'https://alilabsx.com', mail = s => `mailto:Jahanzaib@alilabsx.com?subject=${encodeURIComponent(s)}`
 const esc = s => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')
-const ld = JSON.stringify({ '@context': 'https://schema.org', '@type': 'Organization', name: 'ALI LABS X', legalName: 'ALI LABS X (PRIVATE) LIMITED', url: H + '/', logo: H + '/brand/alx-mark.svg', email: 'Jahanzaib@alilabsx.com', foundingDate: '2026-11-18', founder: { '@type': 'Person', name: 'Jahanzaib Ali Ashraf', jobTitle: 'Founder and Systems Engineer', sameAs: ['https://www.linkedin.com/in/jahanzaib-ali-labsx', 'https://github.com/Jahanzaib211'] }, address: { '@type': 'PostalAddress', addressLocality: 'Lahore', addressRegion: 'Punjab', addressCountry: 'PK' } })
+const ld = JSON.stringify({ '@context': 'https://schema.org', '@type': 'Organization', name: 'ALI LABS X', legalName: 'ALI LABS X (PRIVATE) LIMITED', url: H + '/', logo: H + '/brand/alx-mark.svg', email: 'Jahanzaib@alilabsx.com', foundingDate: '2026-11-18', founder: { '@type': 'Person', name: 'Jahanzaib Ali Ashraf', jobTitle: 'Founder and CEO', sameAs: ['https://www.linkedin.com/in/jahanzaib-ali-labsx', 'https://github.com/Jahanzaib211'] }, address: { '@type': 'PostalAddress', addressLocality: 'Lahore', addressRegion: 'Punjab', addressCountry: 'PK' } })
 function page(l, path, title, desc, main, { alt = true, home = false, noindex = false } = {}) {
   const t = T[l], r = root(l), url = H + r + path, other = x => root(x) + (alt ? path : '')
   return `<!doctype html>
@@ -28,7 +28,7 @@ ${alt && !noindex ? L.map(x => `<link rel="alternate" hreflang="${x === 'zh' ? '
 <meta property="og:url" content="${url}">
 <meta property="og:image" content="${H}/og-image.png">
 <meta name="twitter:card" content="summary_large_image">
-${noindex ? '' : `<script type="application/json" id="lead-text">${JSON.stringify({ ...t.lead, sol: t.sol.map(x => x[0]), name: t.name, en: { ...T.en.lead, sol: T.en.sol.map(x => x[1]) } }).replace(/</g, '\\u003c')}</script>\n`}${home ? `<script type="application/ld+json">${ld}</script>\n<script type="application/json" id="i18n">${JSON.stringify({ js: t.js, inf: t.inf, ask: t.solAsk }).replace(/</g, '\\u003c')}</script>\n` : ''}<link rel="stylesheet" href="/src/style.css">
+${noindex ? '' : `<script type="application/json" id="lead-text">${JSON.stringify({ ...Object.fromEntries(Object.entries(t.lead).filter(([, v]) => typeof v === 'string')), name: t.name }).replace(/</g, '\\u003c')}</script>\n`}${home ? `<script type="application/ld+json">${ld}</script>\n<script type="application/json" id="i18n">${JSON.stringify({ js: t.js, inf: t.inf, ask: t.solAsk }).replace(/</g, '\\u003c')}</script>\n` : ''}<link rel="stylesheet" href="/src/style.css">
 <script type="module" src="/src/main.ts"></script>
 </head>
 <body>

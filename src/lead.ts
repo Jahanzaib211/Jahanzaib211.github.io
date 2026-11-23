@@ -1,24 +1,33 @@
-// Discovery form. Set VITE_LEAD_ENDPOINT to a form endpoint to receive briefs directly; otherwise the visitor's email app is used.
+// Discovery form. Briefs go to the lead engine through the console; if it does not answer, the visitor's email app is used.
+import bundled from './form.json'
 type T = Record<string, any>
-const L: T = JSON.parse(document.getElementById('lead-text')?.textContent ?? '{}'), E: T = L.en
-const END = import.meta.env.VITE_LEAD_ENDPOINT as string | undefined
+type Lang = 'en' | 'ar' | 'ur' | 'zh'
+type Opt = { id: string; label: Record<Lang, string> }
+type Form = { version: number; steps: { title: Record<Lang, string>; hint: Record<Lang, string> }[]; questions: Record<string, Record<Lang, string>> } & Record<'problems' | 'impacts' | 'sizes' | 'places' | 'routes' | 'timing' | 'budgets' | 'roles', Opt[]>
+const L: T = JSON.parse(document.getElementById('lead-text')?.textContent ?? '{}')
+const lang = (document.documentElement.lang.slice(0, 2) as Lang) in { en: 1, ar: 1, ur: 1, zh: 1 } ? (document.documentElement.lang.slice(0, 2) as Lang) : 'en'
+const API = (import.meta.env.VITE_LEAD_API as string | undefined) ?? 'https://novaops.alilabsx.com/api/public'
+let form0 = bundled as unknown as Form, key = '', opened = 0
+const valid = (f: any): f is Form => Array.isArray(f?.steps) && f.steps.length === 5 && ['problems', 'impacts', 'sizes', 'places', 'routes', 'timing', 'budgets', 'roles'].every(g => Array.isArray(f[g]) && f[g].length > 1 && f[g].every((o: any) => typeof o?.id === 'string' && typeof o?.label?.[lang] === 'string')) && typeof f.questions?.story?.[lang] === 'string'
+// The live form is used when it answers quickly; otherwise the copy shipped with the site.
+const ready = fetch(`${API}/form`, { signal: AbortSignal.timeout(2500) }).then(r => r.json()).then(f => { if (valid(f)) form0 = f }).catch(() => {})
+const t = (l: Record<Lang, string>) => l[lang] || l.en, Q = (k: string) => t(form0.questions[k])
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;')
-const FREE = /@(gmail|yahoo|hotmail|outlook|live|icloud|proton|aol|mail|qq|163|126)\./i
 let box: HTMLDialogElement | null = null, step = 0, ctx = '', from: HTMLElement | null = null
 
-const chips = (n: string, o: string[], multi = false) => `<div class="ch">${o.map((x, i) => `<label><input type="${multi ? 'checkbox' : 'radio'}" name="${n}" value="${i}"><span>${esc(x)}</span></label>`).join('')}</div>`
-const q = (i: number, n: string, body: string) => `<div class="q" data-need="${n}" role="group" aria-labelledby="q-${n}"><span id="q-${n}">${esc(L.q[i])}</span>${body}</div>`
-const inp = (i: number, n: string, type: string, auto: string) => `<div class="q" data-need="${n}"><label for="l-${n}">${esc(L.q[i])}</label><input id="l-${n}" type="${type}" name="${n}" autocomplete="${auto}" maxlength="120"${type === 'email' ? ' dir="ltr"' : ''}></div>`
+const chips = (n: string, o: Opt[], multi = false) => `<div class="ch">${o.map(x => `<label><input type="${multi ? 'checkbox' : 'radio'}" name="${n}" value="${esc(x.id)}"><span>${esc(t(x.label))}</span></label>`).join('')}</div>`
+const q = (i: string, n: string, body: string) => `<div class="q" data-need="${n}" role="group" aria-labelledby="q-${n}"><span id="q-${n}">${esc(Q(i))}</span>${body}</div>`
+const inp = (i: string, n: string, type: string, auto: string) => `<div class="q" data-need="${n}"><label for="l-${n}">${esc(Q(i))}</label><input id="l-${n}" type="${type}" name="${n}" autocomplete="${auto}" maxlength="120"${type === 'email' ? ' dir="ltr"' : ''}></div>`
 const STEPS = () => [
-  `<div class="q" data-need="sol" role="group" aria-label="${esc(L.t[0])}">${chips('sol', [...L.sol, L.other])}</div>`,
-  `<div class="q" data-need="story"><label for="l-story">${esc(L.q[0])}</label><textarea id="l-story" name="story" maxlength="900"></textarea></div>${q(1, 'imp', chips('imp', L.imp, true))}`,
-  q(2, 'size', chips('size', L.size)) + q(3, 'run', chips('run', L.run)) + q(4, 'route', chips('route', L.route)),
-  q(5, 'when', chips('when', L.when)) + q(6, 'money', chips('money', L.money)) + q(7, 'role', chips('role', L.role)),
-  `<div class="two-col">${inp(8, 'name', 'text', 'name')}${inp(9, 'email', 'email', 'email')}${inp(10, 'company', 'text', 'organization')}${inp(11, 'country', 'text', 'country-name')}</div><div class="q" data-need="ok"><label class="ok-line"><input type="checkbox" name="ok"><span>${esc(L.q[12])} <a href="/privacy.html" target="_blank" rel="noopener">${document.querySelector('footer nav a')?.textContent ?? ''}</a></span></label></div><input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:0;width:1px;height:1px;opacity:0;padding:0;border:0">`,
+  `<div class="q" data-need="problem" role="group" aria-label="${esc(t(form0.steps[0].title))}">${chips('problem', form0.problems)}</div>`,
+  `<div class="q" data-need="story"><label for="l-story">${esc(Q('story'))}</label><textarea id="l-story" name="story" maxlength="900"></textarea></div>${q('impacts', 'impacts', chips('impacts', form0.impacts, true))}`,
+  q('sizes', 'size', chips('size', form0.sizes)) + q('places', 'place', chips('place', form0.places)) + q('routes', 'route', chips('route', form0.routes)),
+  q('timing', 'timing', chips('timing', form0.timing)) + q('budgets', 'budget', chips('budget', form0.budgets)) + q('roles', 'role', chips('role', form0.roles)),
+  `<div class="two-col">${inp('name', 'name', 'text', 'name')}${inp('email', 'email', 'email', 'email')}${inp('company', 'company', 'text', 'organization')}${inp('country', 'country', 'text', 'country-name')}</div><div class="q" data-need="consent"><label class="ok-line"><input type="checkbox" name="consent"><span>${esc(Q('consent'))} <a href="/privacy.html" target="_blank" rel="noopener">${document.querySelector('footer nav a')?.textContent ?? ''}</a></span></label></div><input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:0;width:1px;height:1px;opacity:0;padding:0;border:0">`,
 ]
 function make() {
   box = document.createElement('dialog'); box.className = 'lead-box'; box.setAttribute('aria-labelledby', 'lead-t0')
-  box.innerHTML = `<form method="dialog" novalidate><div class="lead-top"><p class="where" aria-live="polite"></p><button type="button" class="lead-x">${esc(L.close)}</button></div><div class="lead-bar"><i></i></div>${STEPS().map((b, i) => `<fieldset data-step="${i}"><legend id="lead-t${i}" tabindex="-1">${esc(L.t[i])}</legend><p class="hint">${esc(L.h[i])}</p>${b}</fieldset>`).join('')}<p class="err" role="alert"></p><div class="lead-nav"><button type="button" class="back">${esc(L.back)}</button><button type="submit" class="btn"></button></div></form>`
+  box.innerHTML = `<form method="dialog" novalidate><div class="lead-top"><p class="where" aria-live="polite"></p><button type="button" class="lead-x">${esc(L.close)}</button></div><div class="lead-bar"><i></i></div>${STEPS().map((b, i) => `<fieldset data-step="${i}"><legend id="lead-t${i}" tabindex="-1">${esc(t(form0.steps[i].title))}</legend><p class="hint">${esc(t(form0.steps[i].hint))}</p>${b}</fieldset>`).join('')}<p class="err" role="alert"></p><div class="lead-nav"><button type="button" class="back">${esc(L.back)}</button><button type="submit" class="btn"></button></div></form>`
   document.body.append(box)
   const f = box.querySelector('form')!
   box.querySelector('.lead-x')!.addEventListener('click', () => box!.close())
@@ -43,31 +52,27 @@ function check() {
   }
   return true
 }
-// Fit is worked out for the team's reply order. It never blocks a visitor.
-function score(d: FormData) {
-  const n = (k: string) => Number(d.get(k)); let s = [0, 14, 24, 30, 5][n('money')] + [22, 18, 10, 2][n('when')] + [20, 13, 4][n('role')] + [5, 9, 12, 14][n('size')]
-  s += Math.min(6, d.getAll('imp').length * 2) + (FREE.test(String(d.get('email'))) ? 0 : 5) + (String(d.get('story')).trim().length > 80 ? 3 : 0); return s
-}
 function brief(d: FormData) {
-  const g = (k: string, o: string[]) => o[Number(d.get(k))] ?? '', t = (k: string) => String(d.get(k) ?? '').trim(), s = score(d), tier = s >= 68 ? 'A' : s >= 42 ? 'B' : 'C'
-  const ref = `ALX ${tier}${s} ${Date.now().toString(36).slice(-5).toUpperCase()}`
-  const rows: [string, string][] = [['Reference', ref], ['Request', ctx || 'Discovery'], ['Problem', g('sol', [...E.sol, E.other])], ['In their words', t('story')], ['Affects', d.getAll('imp').map(i => E.imp[Number(i)]).join(', ')], ['Users', g('size', E.size)], ['Runs at', g('run', E.run)], ['Route', g('route', E.route)], ['Needed', g('when', E.when)], ['Budget', g('money', E.money)], ['Role', g('role', E.role)], ['Name', t('name')], ['Email', t('email')], ['Company', t('company')], ['Country', t('country')], ['Language', L.name]]
-  return { ref, rows, text: rows.map(r => `${r[0]}\n${r[1]}`).join('\n\n') }
+  const s = (k: string) => String(d.get(k) ?? '').trim(), en = (g: 'problems' | 'sizes' | 'places' | 'routes' | 'timing' | 'budgets' | 'roles', k: string) => form0[g].find(o => o.id === s(k))?.label.en ?? ''
+  const rows: [string, string][] = [['Request', ctx || 'Discovery'], ['Problem', en('problems', 'problem')], ['In their words', s('story')], ['Affects', d.getAll('impacts').map(i => form0.impacts.find(o => o.id === i)?.label.en).join(', ')], ['Users', en('sizes', 'size')], ['Runs at', en('places', 'place')], ['Route', en('routes', 'route')], ['Needed', en('timing', 'timing')], ['Budget', en('budgets', 'budget')], ['Role', en('roles', 'role')], ['Name', s('name')], ['Email', s('email')], ['Company', s('company')], ['Country', s('country')], ['Language', L.name]]
+  return rows.map(r => `${r[0]}\n${r[1]}`).join('\n\n')
 }
 async function finish() {
-  const d = data(); if (d.get('website')) { box!.close(); return }
-  const b = brief(d), href = `mailto:Jahanzaib@alilabsx.com?subject=${encodeURIComponent(`Discovery brief ${b.ref}`)}&body=${encodeURIComponent(b.text)}`
-  let sent = false, failed = false; const btn = box!.querySelector<HTMLButtonElement>('.lead-nav .btn')!
-  if (END) { btn.disabled = true; try { const r = await fetch(END, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ ...Object.fromEntries(b.rows), _replyto: String(d.get('email')), _subject: `Discovery brief ${b.ref}` }), signal: AbortSignal.timeout(15000) }); sent = r.ok } catch { /* shown below */ } failed = !sent; btn.disabled = false }
+  const d = data(), s = (k: string) => String(d.get(k) ?? '').trim(), btn = box!.querySelector<HTMLButtonElement>('.lead-nav .btn')!, text = brief(d)
+  const payload = { idempotencyKey: key, formVersion: form0.version, language: lang, request: ctx.slice(0, 80), problem: s('problem'), story: s('story'), impacts: d.getAll('impacts').map(String), size: s('size'), place: s('place'), route: s('route'), timing: s('timing'), budget: s('budget'), role: s('role'), name: s('name'), email: s('email'), company: s('company'), country: s('country'), consent: true, elapsedMs: Math.round(performance.now() - opened), website: s('website') }
+  btn.disabled = true; let ref = ''
+  try { const r = await fetch(`${API}/leads`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal: AbortSignal.timeout(12000) }); if (r.ok) ref = String((await r.json()).reference ?? '') } catch { /* offered by email below */ }
+  btn.disabled = false
+  const href = `mailto:Jahanzaib@alilabsx.com?subject=${encodeURIComponent('Discovery brief, ' + s('company'))}&body=${encodeURIComponent(text)}`
   const v = document.createElement('div'); v.className = 'lead-done'
-  v.innerHTML = `<h2 tabindex="-1">${esc(sent ? L.sent : L.done)}</h2><p>${esc(sent ? L.sentP : failed ? L.fail : L.doneP)}</p>`
-  if (!sent) { const p = document.createElement('pre'); p.dir = 'ltr'; p.textContent = b.text; const r = document.createElement('div'); r.className = 'row'; r.innerHTML = `<a class="btn" href="${esc(href)}">${esc(L.mail)}</a><button type="button" class="lead-x copy">${esc(L.copy)}</button>`; v.append(p, r); r.querySelector('.copy')!.addEventListener('click', async e => { const c = e.currentTarget as HTMLElement; try { await navigator.clipboard.writeText(b.text); c.textContent = L.copied } catch { getSelection()?.selectAllChildren(p) } }) }
+  v.innerHTML = `<h2 tabindex="-1">${esc(ref ? L.sent : L.done)}</h2><p>${esc(ref ? L.sentP : L.fail)}</p>${ref ? `<p class="ref" dir="ltr">${esc(ref.replace(/-[ABC]\d+-/, '-'))}</p>` : ''}`
+  if (!ref) { const p = document.createElement('pre'); p.dir = 'ltr'; p.textContent = text; const r = document.createElement('div'); r.className = 'row'; r.innerHTML = `<a class="btn" href="${esc(href)}">${esc(L.mail)}</a><button type="button" class="lead-x copy">${esc(L.copy)}</button>`; v.append(p, r); r.querySelector('.copy')!.addEventListener('click', async e => { const c = e.currentTarget as HTMLElement; try { await navigator.clipboard.writeText(text); c.textContent = L.copied } catch { getSelection()?.selectAllChildren(p) } }) }
   const f = form(); f.querySelectorAll('fieldset,.lead-nav,.err,.lead-bar').forEach(e => e.remove()); f.querySelector('.where')!.textContent = ''; f.append(v); v.querySelector<HTMLElement>('h2')!.focus()
-  if (!sent && !failed) location.href = href
 }
-export function openLead(context: string, solution: number | null, opener: HTMLElement) {
-  if (!box || box.querySelector('.lead-done')) { box?.remove(); make() }
+export async function openLead(context: string, solution: number | null, opener: HTMLElement) {
+  await Promise.race([ready, new Promise(r => setTimeout(r, 900))])
+  if (!box || box.querySelector('.lead-done')) { box?.remove(); make(); key = crypto.randomUUID(); opened = performance.now() }
   ctx = context; from = opener; step = 0
-  if (solution !== null) { const i = box!.querySelector<HTMLInputElement>(`[name=sol][value="${solution}"]`); if (i) { i.checked = true; step = 1 } }
+  if (solution !== null) { const i = box!.querySelector<HTMLInputElement>(`[name=problem][value="${bundled.problems[solution]?.id}"]`); if (i) { i.checked = true; step = 1 } }
   document.documentElement.style.overflow = 'hidden'; box!.showModal(); draw()
 }

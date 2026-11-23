@@ -2,7 +2,8 @@
 
 Owner: ALI LABS X (PRIVATE) LIMITED. This is the company site, replacing the founder portfolio.
 
-- Founder: Jahanzaib Ali Ashraf, Founder & Systems Engineer. Do not say CEO until the appointment is on file.
+- Jahanzaib Ali Ashraf is Founder and CEO (owner decision). Use Chief Executive in legal papers only once the appointment is filed.
+- The form posts to the console, novaops.alilabsx.com/api/public. src/form.json is the offline copy of the form.
 - Products, in order: NOVA BOTS, NOVA, LOCO, STORELOOM. Do not claim NOVA or NOVA BOTS is wholly original; upstream notices stay in their repos.
 - Do not name other companies as partners or clients. No client numbers or certification claims.
 - Company facts must match the SECP documents. No phone or street address on the site.

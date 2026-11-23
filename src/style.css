@@ -83,3 +83,4 @@ input{font-family:inherit}@media(min-width:901px){:lang(zh) .hero h1{max-width:6
 .err{color:#ff9aa4;min-height:26px;margin-top:14px;font-size:15px}.lead-nav{display:flex;justify-content:space-between;gap:14px;margin-top:10px}.lead-nav .back{background:none;border:0;color:#fff;text-decoration:underline;text-underline-offset:5px;cursor:pointer;min-height:48px}.lead-nav .btn,.lead-done .btn{border:0;cursor:pointer;font:600 16px var(--font);min-height:50px}.lead-done h2{font-size:34px}.lead-done p{color:#d3def0;margin:14px 0 22px}.lead-done pre{background:#071127;padding:18px;max-height:210px;overflow:auto;margin:20px 0;white-space:pre-wrap;font:400 14px/1.6 var(--font)}
 @media(max-width:600px){.lead-box form{padding:22px 18px}.two-col{grid-template-columns:1fr}}
 .row.mid{justify-content:center}
+.lead-done .ref{font-weight:600;color:var(--cyan)}
