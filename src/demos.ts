@@ -22,10 +22,10 @@ function bots() {
     const steps: string[] = J.jobs[+b.dataset.job!][1]
     for (let i = 0; i < steps.length; i++) {
       if (id !== token) return
-      nodes.forEach((n, k) => n.classList.toggle('on', k === i % 4)); world?.pulse()
+      nodes.forEach((n, k) => n.classList.toggle('on', k === i % 4)); world?.act('bots', i % 4); world?.pulse()
       const li = document.createElement('li'); li.textContent = steps[i]; log.append(li); await wait(1000)
     }
-    if (id === token) nodes.forEach(n => n.classList.remove('on'))
+    if (id === token) { nodes.forEach(n => n.classList.remove('on')); world?.act('bots', -1) }
   }))
 }
 function nova() {
@@ -33,6 +33,7 @@ function nova() {
   const show = (i: number, focus = false) => {
     tabs.forEach((t, k) => { t.setAttribute('aria-selected', String(k === i)); t.tabIndex = k === i ? 0 : -1 })
     if (focus) tabs[i].focus()
+    world?.act('nova', i)
     pane.setAttribute('aria-labelledby', tabs[i].id)
     if (i === 3) {
       pane.innerHTML = `<form class="calc"><label>${J.calc[0]} <input type="number" name="t" value="84" min="0"></label><label>${J.calc[1]} <input type="number" name="p" value="10" min="0"></label><label>${J.calc[2]} <input type="number" name="n" value="3" min="1"></label><output></output></form>`
@@ -50,7 +51,7 @@ function loco() {
   const box = $('#loco-demo'), cap = $<HTMLInputElement>('#vram', box), out = $('output', box), fill = $('.fill', box), say = $('.say', box), RES = 1.5
   const on = new Map<string, number>(), btn = $$<HTMLButtonElement>('[data-gb]', box)
   const used = () => [...on.values()].reduce((a, b) => a + b, 0)
-  const draw = () => { const c = +cap.value; out.textContent = `${c} GB`; fill.style.width = `${Math.min(100, used() / c * 100)}%`; btn.forEach(b => b.setAttribute('aria-pressed', String(on.has(b.dataset.i!)))) }
+  const draw = () => { const c = +cap.value; out.textContent = `${c} GB`; world?.act('loco', Math.min(1, used() / c)); fill.style.width = `${Math.min(100, used() / c * 100)}%`; btn.forEach(b => b.setAttribute('aria-pressed', String(on.has(b.dataset.i!)))) }
   btn.forEach(b => b.addEventListener('click', () => {
     const id = b.dataset.i!, n: string = J.models[+id], g = +b.dataset.gb!, c = +cap.value
     if (on.has(id)) { on.delete(id); say.textContent = fmt(J.un, { n, f: (c - used()).toFixed(1) }); say.className = 'say' }
@@ -70,13 +71,13 @@ function store() {
   box.addEventListener('click', e => {
     const t = e.target as HTMLElement, d = t.dataset
     if (d.add) order.push(+d.add); else if (d.rm) order = order.filter((_, i) => i !== +d.rm!); else if (d.up) { const i = +d.up;[order[i - 1], order[i]] = [order[i], order[i - 1]] }
-    else if (d.hue) { prev.style.setProperty('--shop', d.hue); $$('[data-hue]', box).forEach(x => x.setAttribute('aria-pressed', String(x === t))); return } else return
+    else if (d.hue) { prev.style.setProperty('--shop', d.hue); world?.act('storeloom', d.hue); $$('[data-hue]', box).forEach(x => x.setAttribute('aria-pressed', String(x === t))); return } else return
     draw(); world?.pulse()
     ;(d.add ? $<HTMLElement>('.blk:last-child [data-rm]', prev) : prev.querySelector<HTMLElement>('button:not([disabled])') ?? $<HTMLElement>('[data-add]:not([disabled])', box))?.focus({ preventScroll: true })
   }); draw()
 }
 function solutions() {
   const sec = $('#solutions'), ask = $<HTMLAnchorElement>('#sol-ask')
-  $$<HTMLInputElement>('input[name=sol]').forEach(i => i.addEventListener('change', () => { sec.dataset.active = i.dataset.f!; world?.setForm(i.dataset.f!); world?.pulse(); ask.href = i.dataset.m! }))
+  $$<HTMLInputElement>('input[name=sol]').forEach(i => i.addEventListener('change', () => { world?.setForm('desk'); world?.act('desk', +i.value); world?.pulse(); ask.href = i.dataset.m! }))
 }
 export function startDemos() { solutions(); deployment(); bots(); nova(); loco(); store() }

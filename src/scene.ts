@@ -1,9 +1,10 @@
-import { WebGLRenderer, Scene, PerspectiveCamera, Group, InstancedMesh, BoxGeometry, MeshStandardMaterial, MeshPhysicalMaterial, Mesh, Shape, ExtrudeGeometry, Color, HemisphereLight, DirectionalLight, PointLight, Object3D, DynamicDrawUsage, NoToneMapping, PMREMGenerator, Float32BufferAttribute, Fog, SRGBColorSpace, MathUtils } from 'three'
+import { WebGLRenderer, Scene, PerspectiveCamera, Group, MeshPhysicalMaterial, Mesh, Shape, ExtrudeGeometry, Color, HemisphereLight, DirectionalLight, PointLight, Object3D, NoToneMapping, PMREMGenerator, Float32BufferAttribute, Fog, SRGBColorSpace, MathUtils, Vector3 } from 'three'
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
 import { gsap } from 'gsap'
-import { COUNT, POLYS, forms, toWorld } from './formations'
+import { POLYS, toWorld } from './formations'
+import { makers, halo, type Model } from './models'
 
-export interface World { setForm(name: string): void; pulse(): void; gate(ok: boolean): void }
+export interface World { setForm(name: string): void; pulse(): void; gate(ok: boolean): void; act(name: string, v: number | string | boolean): void }
 interface Stop { el: HTMLElement; form: string; side: number }
 
 export function createWorld(canvas: HTMLCanvasElement, reduced: boolean): World {
@@ -35,15 +36,17 @@ export function createWorld(canvas: HTMLCanvasElement, reduced: boolean): World 
   const scatter = [[-3, 2, 2, 1.2], [2, 3, -3, -1.6], [-2, -3, 3, 1.4], [3, -2, -2, -1.1], [4, 2.5, 2, 1.8]]
   const intro = { t: reduced ? 1 : 0 }
 
-  const shards = new InstancedMesh(new BoxGeometry(1, 1, 1), new MeshStandardMaterial({ metalness: 0.25, roughness: 0.35, emissive: 0x0130a0, emissiveIntensity: 0.35 }), COUNT)
-  shards.instanceMatrix.setUsage(DynamicDrawUsage); shards.frustumCulled = false; root.add(shards)
-  const o = new Object3D(), ramp = [new Color('#0a2a78'), new Color('#0268f4'), new Color('#04d8fa')], tmp = new Color()
-  const cp = new Float32Array(forms.logo.p), cs = new Float32Array(COUNT * 3), cq = new Float32Array(COUNT * 3), cc = new Float32Array(forms.logo.c)
-  const speed = new Float32Array(COUNT); for (let i = 0; i < COUNT; i++) speed[i] = 2.2 + ((i * 7919) % 100) / 28
-  for (let i = 0; i < COUNT; i++) shards.setColorAt(i, ramp[1])
-
+  // Real models, built when first needed and assembled part by part
+  const made = new Map<string, { m: Model; w: number; home: Vector3[]; off: Vector3[]; spin: Vector3[] }>()
+  const get = (n: string) => {
+    let e = made.get(n); if (e || !makers[n]) return e
+    const m = makers[n](), home = m.parts.map(o => o.position.clone())
+    const off = home.map((h, i) => { const a = i * 2.4; return new Vector3(h.x * 0.9 + Math.cos(a) * 1.6, h.y * 0.9 + Math.sin(a * 1.3) * 1.8, h.z + Math.sin(a) * 1.8) })
+    e = { m, w: 0, home, off, spin: home.map((_, i) => new Vector3(Math.sin(i * 1.9) * 0.9, Math.cos(i * 2.7) * 1.1, 0)) }; m.root.visible = false; root.add(m.root); made.set(n, e); return e
+  }
+  const base = new Map<Object3D, Vector3>(), glowPlane = halo(); glowPlane.position.y = -1.95; root.add(glowPlane)
   const sections: Stop[] = [...document.querySelectorAll<HTMLElement>('[data-form]')].map(el => ({ el, form: el.dataset.form!, side: Number(el.dataset.side ?? 1) * (document.dir === 'rtl' ? -1 : 1) }))
-  let target = 'logo', override = '', cur = sections[0], logoW = 1, x = 0, px = 0, py = 0, mx = 0, my = 0, spin = 0, yy = 0, sc = 0.62, boost = 0, dirty = true
+  let target = 'logo', override = '', cur = sections[0], logoW = 1, x = 0, px = 0, py = 0, mx = 0, my = 0, spin = 0, lean = 0, yy = 0, sc = 0.62, boost = 0, dirty = true
   const flash = { v: 0 }
   const locate = () => {
     const mid = innerHeight * 0.52; let best = sections[0], d = 1e9
@@ -64,37 +67,44 @@ export function createWorld(canvas: HTMLCanvasElement, reduced: boolean): World 
     requestAnimationFrame(frame)
     const dt = Math.min((now - last) / 1000, 0.05); last = now
     if (reduced && !dirty) return
-    const f = forms[target], isLogo = target === 'logo', k1 = reduced ? 1 : 1 - Math.exp(-dt * 4)
+    const isLogo = target === 'logo', k1 = reduced ? 1 : 1 - Math.exp(-dt * 4)
     const wide = innerWidth >= 900
     logoW += ((isLogo ? 1 : 0) - logoW) * (reduced ? 1 : 1 - Math.exp(-dt * 5))
     x += ((wide ? cur.side * (cur === sections[0] ? 2.55 : 2.25) * Math.min(cam.aspect / 1.7, 1.1) : 0) - x) * k1
     px += (mx - px) * Math.min(1, dt * 4); py += (my - py) * Math.min(1, dt * 4)
-    if (!reduced) spin = isLogo ? spin * Math.exp(-dt * 3) : spin + dt * (target === 'storeloom' ? 0 : 0.16)
-    if (isLogo) spin = ((spin + Math.PI) % (Math.PI * 2)) - Math.PI
-    const still = target === 'storeloom' || target === 'loco'
+    const mod = made.get(target)?.m
+    const ty = isLogo ? 0 : (mod?.turn ?? -0.4) * (x < 0 ? -1 : 1) + (reduced ? 0 : Math.sin(now / 2600) * 0.16), tx = isLogo ? 0 : mod?.tilt ?? 0.2
+    spin += (ty - spin) * k1; lean += (tx - lean) * k1
     const end = isLogo && cur !== sections[0]
-    yy += ((wide ? (end ? 1.1 : 0) : cur === sections[0] ? 2.2 : end ? 1.6 : 2.3) - yy) * k1; sc += ((wide ? (isLogo ? (end ? 0.74 : 0.62) : 0.9) : isLogo ? 0.56 : 0.74) - sc) * k1
+    let goal = wide ? 0 : cur === sections[0] ? 2.2 : 2.3
+    if (end) { const h = cur.el.querySelector('h2')!.getBoundingClientRect(), top = cur.el.getBoundingClientRect().top, px1 = (2 * Math.tan((cam.fov * Math.PI) / 360) * cam.position.z) / innerHeight; goal = (innerHeight / 2 - (top + (h.top - top) * 0.52)) * px1; yy = goal } else yy += (goal - yy) * k1
+    sc += ((wide ? (isLogo ? (end ? 0.62 : 0.62) : 0.82) : isLogo ? (end ? 0.5 : 0.56) : 0.6) - sc) * k1
     root.position.set(x, yy, 0)
     root.scale.setScalar(sc)
-    root.rotation.set((isLogo ? 0 : still ? -0.12 : 0.28) * (1 - logoW) + py * 0.28, spin * (still ? 0.15 : 1) + px * 0.65 + (still ? -0.5 : 0) * (1 - logoW), 0)
+    root.rotation.set(lean + py * 0.28, spin + px * 0.65, 0)
     const it = intro.t
     ribbons.forEach((m, i) => {
       const s = scatter[i], e = 1 - MathUtils.clamp(it * 1.5 - i * 0.1, 0, 1), away = e * e * (3 - 2 * e) * 1.5 + (1 - logoW)
       m.position.set(s[0] * away, s[1] * away, s[2] * away); m.rotation.set(s[3] * away, s[3] * away * 1.4, 0)
       ;(m.material as MeshPhysicalMaterial).opacity = MathUtils.clamp(logoW * 1.6 - 0.5, 0, 1) * Math.min(1, it * 2.5); m.visible = logoW > 0.02
     })
-    const shardScale = 1 - logoW * 0.985
     boost += (0 - boost) * Math.min(1, dt * 2.2)
-    const t = now / 1000
-    for (let i = 0; i < COUNT; i++) {
-      const j = i * 3, a = reduced ? 1 : 1 - Math.exp(-dt * speed[i])
-      for (let n = 0; n < 3; n++) { cp[j + n] += (f.p[j + n] - cp[j + n]) * a; cs[j + n] += (f.s[j + n] - cs[j + n]) * a; cq[j + n] += (f.q[j + n] - cq[j + n]) * a }
-      cc[i] += (f.c[i] - cc[i]) * a
-      const wob = reduced ? 0 : Math.sin(t * 1.4 + i * 0.37) * (target === 'innovate' ? 0.06 : 0.008) + boost * Math.sin(i * 1.7 + t * 9) * 0.07
-      o.position.set(cp[j], cp[j + 1] + wob, cp[j + 2]); o.rotation.set(cq[j], cq[j + 1], cq[j + 2]); o.scale.set(Math.max(cs[j] * shardScale, 1e-4), Math.max(cs[j + 1] * shardScale, 1e-4), Math.max(cs[j + 2] * shardScale, 1e-4)); o.updateMatrix(); shards.setMatrixAt(i, o.matrix)
-      const v = MathUtils.clamp(cc[i] + boost * 0.5, 0, 1); tmp.copy(v < 0.5 ? ramp[0] : ramp[1]).lerp(v < 0.5 ? ramp[1] : ramp[2], v < 0.5 ? v * 2 : v * 2 - 1); shards.setColorAt(i, tmp)
-    }
-    shards.instanceMatrix.needsUpdate = true; shards.instanceColor!.needsUpdate = true
+    const time = reduced ? 0 : now / 1000
+    if (!isLogo) get(target)
+    glowPlane.scale.setScalar(Math.max(0.001, 1 - logoW)); glowPlane.visible = logoW < 0.98
+    made.forEach((e, n) => {
+      const on = n === target; e.w += ((on ? 1 : 0) - e.w) * (reduced ? 1 : 1 - Math.exp(-dt * (on ? 2.6 : 6)))
+      e.m.root.visible = e.w > 0.015; if (!e.m.root.visible) return
+      e.m.root.scale.setScalar(e.m.s ?? 1); e.m.tick?.(time)
+      e.m.parts.forEach((o, i) => {
+        const d = on ? (i / e.m.parts.length) * 0.35 : 0, k = MathUtils.clamp((e.w - d) / (1 - d - 0.02), 0, 1), q = k * k * (3 - 2 * k), v = 1 - q
+        if (!base.has(o)) base.set(o, new Vector3(o.rotation.x, o.rotation.y, o.rotation.z))
+        o.userData.in = q > 0.995
+        if (o.userData.in) { if (!o.userData.done) { o.position.copy(e.home[i]); const r0 = base.get(o)!; o.rotation.set(r0.x, r0.y, r0.z); o.scale.setScalar(1); o.userData.done = true } return }
+        o.userData.done = false; const r0 = base.get(o)!
+        o.position.copy(e.home[i]).addScaledVector(e.off[i], v); o.rotation.set(r0.x + e.spin[i].x * v, r0.y + e.spin[i].y * v, r0.z); o.scale.setScalar(Math.max(q, 0.001))
+      })
+    })
     spark.intensity = flash.v * 70
     r.render(scene, cam); dirty = false
   }
@@ -103,5 +113,5 @@ export function createWorld(canvas: HTMLCanvasElement, reduced: boolean): World 
   document.addEventListener('visibilitychange', () => { run = !document.hidden; if (run) { last = performance.now(); requestAnimationFrame(frame) } })
   canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); run = false; document.documentElement.classList.add('no3d') })
   const fl = (c: number) => { spark.color.set(c); flash.v = 1; gsap.to(flash, { v: 0, duration: 1.1, ease: 'power2.out' }); boost = reduced ? 0 : 1; dirty = true }
-  return { setForm(n) { override = n; target = n; dirty = true }, pulse() { fl(0x04d8fa) }, gate(ok) { fl(ok ? 0x22e59a : 0xff4d5e) } }
+  return { setForm(n) { override = n; target = n; dirty = true }, pulse() { fl(0x04d8fa) }, gate(ok) { fl(ok ? 0x22e59a : 0xff4d5e); get('loco')!.m.act?.(ok) }, act(n, v) { get(n)?.m.act?.(v); dirty = true } }
 }
