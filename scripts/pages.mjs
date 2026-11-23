@@ -28,7 +28,7 @@ ${alt && !noindex ? L.map(x => `<link rel="alternate" hreflang="${x === 'zh' ? '
 <meta property="og:url" content="${url}">
 <meta property="og:image" content="${H}/og-image.png">
 <meta name="twitter:card" content="summary_large_image">
-${home ? `<script type="application/ld+json">${ld}</script>\n<script type="application/json" id="i18n">${JSON.stringify({ js: t.js, inf: t.inf, ask: t.solAsk }).replace(/</g, '\\u003c')}</script>\n` : ''}<link rel="stylesheet" href="/src/style.css">
+${noindex ? '' : `<script type="application/json" id="lead-text">${JSON.stringify({ ...t.lead, sol: t.sol.map(x => x[0]), name: t.name, en: { ...T.en.lead, sol: T.en.sol.map(x => x[1]) } }).replace(/</g, '\\u003c')}</script>\n`}${home ? `<script type="application/ld+json">${ld}</script>\n<script type="application/json" id="i18n">${JSON.stringify({ js: t.js, inf: t.inf, ask: t.solAsk }).replace(/</g, '\\u003c')}</script>\n` : ''}<link rel="stylesheet" href="/src/style.css">
 <script type="module" src="/src/main.ts"></script>
 </head>
 <body>
@@ -36,7 +36,7 @@ ${home ? `<script type="application/ld+json">${ld}</script>\n<script type="appli
 <header><div class="wrap">
 <a class="logo" href="${r}"><img src="/brand/alx-mark.svg" alt="" width="62" height="28"><span dir="ltr">ALI LABS X<small>(PRIVATE) LIMITED</small></span></a>
 <button class="menu" aria-expanded="false" aria-controls="nav" data-open="${t.menu}" data-close="${t.close}">${t.menu}</button>
-<nav id="nav" aria-label="${t.menu}">${['solutions', 'services', 'products', 'approach', 'company'].map((k, i) => `<a href="${r}#${k}">${t.nav[i]}</a>`).join('')}<details class="lang"><summary aria-label="${t.lang}">${t.name}</summary><div>${L.map(x => `<a href="${other(x)}" lang="${x}" dir="${T[x].dir}"${x === l ? ' aria-current="true"' : ''}>${T[x].name}</a>`).join('')}</div></details><a class="btn" href="${r}#contact">${t.contact}</a></nav>
+<nav id="nav" aria-label="${t.menu}">${['solutions', 'services', 'products', 'approach', 'company'].map((k, i) => `<a href="${r}#${k}">${t.nav[i]}</a>`).join('')}<details class="lang"><summary aria-label="${t.lang}">${t.name}</summary><div>${L.map(x => `<a href="${other(x)}" lang="${x}" dir="${T[x].dir}"${x === l ? ' aria-current="true"' : ''}>${T[x].name}</a>`).join('')}</div></details><a class="btn" href="${mail('Project enquiry')}" data-lead="">${t.contact}</a></nav>
 </div></header>
 ${main}
 <footer><div class="wrap"><div><span dir="ltr">&copy; 2026 ALI LABS X (PRIVATE) LIMITED</span><br>${t.ft}</div>
@@ -52,33 +52,32 @@ const demo = (k, t) => {
   if (k === 'loco') return `<div id="loco-demo" class="demo"><label class="do" for="vram">${j.vram} <output dir="ltr">12 GB</output></label><input id="vram" type="range" min="6" max="24" step="2" value="12"><div class="meter"><div class="fill"></div></div><div class="opts">${j.models.map((x, i) => `<button type="button" data-i="${i}" data-gb="${[4.5, 9, 18, 1][i]}" aria-pressed="false">${x}<small dir="ltr">${[4.5, 9, 18, 1][i]} GB</small></button>`).join('')}</div><p class="say" aria-live="polite">${j.load}</p></div>`
   return `<div id="store-demo" class="demo"><p class="do">${j.shop}</p><div class="opts">${j.blocks.map((x, i) => `<button type="button" data-add="${i}">${x}</button>`).join('')}</div><div class="hues">${['#0268f4', '#0b7a5b', '#7a3ef0'].map((c, i) => `<button type="button" data-hue="${c}" aria-pressed="${!i}" aria-label="${j.hues[i]}" style="background:${c}"></button>`).join('')}</div><div class="shop"></div></div>`
 }
-const SF = ['bots', 'innovate', 'nova', 'own', 'storeloom', 'bots', 'build', 'innovate', 'loco', 'cloud', 'airgap', 'own', 'storeloom', 'onprem']
 for (const l of L) {
   const t = T[l], r = root(l), dir = '.' + r; mkdirSync(dir + 'products', { recursive: true })
   const scene = (id, form, side, inner, cls = '') => `<section ${id ? `id="${id}" ` : ''}class="scene ${side < 0 ? 'right ' : ''}${cls}" data-form="${form}" data-side="${side}"><div class="wrap">${inner}</div></section>\n`
   let m = `<canvas id="world" aria-hidden="true"></canvas>
 <main id="main">
-<section class="hero" data-form="logo" data-side="1"><div class="wrap"><img class="flat" src="/brand/alx-mark.svg" alt="" width="1452" height="665"><h1>${t.h1}</h1><p>${t.hero}</p><div class="row"><a class="btn" href="${mail('Project enquiry')}">${t.start}</a><a class="link" href="#solutions">${t.disc}</a></div></div></section>
+<section class="hero" data-form="logo" data-side="1"><div class="wrap"><img class="flat" src="/brand/alx-mark.svg" alt="" width="1452" height="665"><h1>${t.h1}</h1><p>${t.hero}</p><div class="row"><a class="btn" href="${mail('Project enquiry')}" data-lead="">${t.start}</a><a class="link" href="#solutions">${t.disc}</a></div></div></section>
 `
   t.story.forEach((s, i) => { m += scene('', ['build', 'own', 'innovate'][i], i === 1 ? -1 : 1, `<div class="say-big"><h2>${s[0]}</h2><p>${s[1]}</p></div>`) })
-  m += scene('solutions', 'bots', 1.3, `<div class="panel wide"><h2>${t.solH}</h2><p>${t.solP}</p><fieldset class="sols"><legend class="vh">${t.nav[0]}</legend>${t.sol.map((s, i) => `<label><input type="radio" name="sol" value="${i}" data-f="${SF[i]}" data-m="${mail(T.en.sol[i][1])}"${i ? '' : ' checked'}><span><small>${s[0]}</small><b>${s[1]}</b></span></label>`).join('')}</fieldset><a id="sol-ask" class="btn" href="${mail(T.en.sol[0][1])}">${t.solAsk}</a></div>`)
+  m += scene('solutions', 'desk', 1.3, `<div class="panel wide"><h2>${t.solH}</h2><p>${t.solP}</p><fieldset class="sols"><legend class="vh">${t.nav[0]}</legend>${t.sol.map((s, i) => `<label><input type="radio" name="sol" value="${i}" data-m="${mail(T.en.sol[i][1])}"${i ? '' : ' checked'}><span><small>${s[0]}</small><b>${s[1]}</b></span></label>`).join('')}</fieldset><a id="sol-ask" class="btn" data-lead="sol" href="${mail(T.en.sol[0][1])}">${t.solAsk}</a></div>`)
   m += `<section class="light solid"><div class="wrap two">${t.two.map(x => `<div><h2>${x[0]}</h2><p>${x[1]}</p></div>`).join('')}</div></section>
 <section id="services" class="dark solid"><div class="wrap"><h2>${t.svcH}</h2><div class="services">${t.svc.map(x => `<div><h3>${x[0]}</h3><p>${x[1]}</p></div>`).join('')}</div></div></section>
 `
   m += scene('infrastructure', 'onprem', 1, `<div class="panel"><h2>${t.infH}</h2><p>${t.infP}</p><fieldset class="seg"><legend class="vh">${t.infP}</legend>${['cloud', 'onprem', 'airgap'].map(k => `<label><input type="radio" name="deploy" value="${k}"${k === 'onprem' ? ' checked' : ''}><span>${t.inf[k][0]}</span></label>`).join('')}</fieldset><p id="deploy-out" class="out" aria-live="polite">${t.inf.onprem[1]}</p></div>`)
   m += `<section id="products" class="intro"><div class="wrap"><h2>${t.prH}</h2><p class="lead">${t.prP}</p></div></section>\n`
-  P.forEach((k, i) => { m += scene(k, ['bots', 'nova', 'loco', 'storeloom'][i], i % 2 ? 1 : -1, `<div class="panel"><h3><img src="/brand/${k}-mark.svg" alt="" width="54" height="54"><span dir="ltr">${N[k]}</span></h3><p>${t.p[k]}</p>${demo(k, t)}<div class="row"><a class="btn" href="${mail(N[k] + ' private demo request')}">${t.demo}</a><a class="link" href="${r}products/${k}.html">${t.tale}</a></div></div>`) })
+  P.forEach((k, i) => { m += scene(k, ['bots', 'nova', 'loco', 'storeloom'][i], i % 2 ? 1 : -1, `<div class="panel"><h3><img src="/brand/${k}-mark.svg" alt="" width="54" height="54"><span dir="ltr">${N[k]}</span></h3><p>${t.p[k]}</p>${demo(k, t)}<div class="row"><a class="btn" href="${mail(N[k] + ' private demo request')}" data-lead="${N[k]} private demo">${t.demo}</a><a class="link" href="${r}products/${k}.html">${t.tale}</a></div></div>`) })
   m += `<section id="approach" class="dark solid"><div class="wrap"><h2>${t.apH}</h2><ol class="steps">${t.ap.map(x => `<li><b>${x[0]}</b>${x[1]}</li>`).join('')}</ol></div></section>
 <section id="company" class="light solid"><div class="wrap company"><div><h2>${t.coH}</h2><p class="lead">${t.coP}</p></div><dl><div><dt>${t.dl[0]}</dt><dd dir="ltr">ALI LABS X (PRIVATE) LIMITED</dd></div><div><dt>${t.dl[1]}</dt><dd>${t.dv[0]}</dd></div><div><dt>${t.dl[2]}</dt><dd><a href="https://leap.secp.gov.pk/#/verify-company-info/0366968">0366968</a></dd></div><div><dt>${t.dl[3]}</dt><dd>${t.dv[1]}</dd></div><div><dt>${t.dl[4]}</dt><dd>${t.dv[2]}</dd></div></dl></div></section>
 `
-  m += scene('contact', 'logo', 0, `<h2>${t.enH}</h2><p class="lead">${t.enP}</p><a class="btn" dir="ltr" href="${mail('Project enquiry')}">Jahanzaib@alilabsx.com</a>`, 'end') + '</main>'
+  m += scene('contact', 'logo', 0, `<h2>${t.enH}</h2><p class="lead">${t.enP}</p><div class="row mid"><a class="btn" href="${mail('Project enquiry')}" data-lead="">${t.lead.open}</a><a class="link" dir="ltr" href="mailto:Jahanzaib@alilabsx.com">Jahanzaib@alilabsx.com</a></div>`, 'end') + '</main>'
   writeFileSync(dir + 'index.html', page(l, '', t.title, t.desc, m, { home: true }))
   P.forEach((k, i) => {
     const s = t.st[k], nx = P[(i + 1) % 4], title = t.pt.replace('{n}', N[k])
     writeFileSync(`${dir}products/${k}.html`, page(l, `products/${k}.html`, title, s[0], `<main id="main"><article class="wrap story-page"><div class="story-top"><div><h1 dir="ltr">${N[k]}</h1><p>${s[0]}</p></div><img src="/brand/${k}-mark.svg" alt="" width="256" height="256"></div>
 ${[0, 1, 2].map(n => `<section class="chapter"><h2>${t.ch[n]}</h2><div><p>${s[n + 1]}</p></div></section>`).join('\n')}
 <section class="chapter"><h2>${t.ch[3]}</h2><div><ul>${s[4].map(x => `<li>${x}</li>`).join('')}</ul>${CODE[k] ? `<p><a class="link" href="${CODE[k]}">${t.src}</a></p>` : ''}</div></section>
-<div class="next"><a class="btn" href="${mail(N[k] + ' private demo request')}">${t.demo}</a><a class="link" href="${r}products/${nx}.html">${t.next.replace('{n}', N[nx])}</a></div></article></main>`))
+<div class="next"><a class="btn" href="${mail(N[k] + ' private demo request')}" data-lead="${N[k]} private demo">${t.demo}</a><a class="link" href="${r}products/${nx}.html">${t.next.replace('{n}', N[nx])}</a></div></article></main>`))
   })
 }
 for (const [f, title] of [['privacy', 'Privacy policy'], ['terms', 'Terms of use'], ['404', 'Page not found']])
