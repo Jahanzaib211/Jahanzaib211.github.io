@@ -3,6 +3,7 @@ import { writeFileSync, mkdirSync, readFileSync } from 'node:fs'
 import SOL, { SLUGS, UI } from '../content/solutions.mjs'
 import INS from '../content/insights.mjs'
 import IC from '../content/icons.mjs'
+import PI from '../content/pages-i18n.mjs'
 import CO from '../content/consent.mjs'
 import { execSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
@@ -22,6 +23,8 @@ function page(l, path, title, desc, main, { alt = true, extra = [], crumb = [], 
 <html lang="${l === 'zh' ? 'zh-Hans' : l}" dir="${t.dir}">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.google-analytics.com https://www.googletagmanager.com; font-src 'self'; connect-src 'self' https://novaops.alilabsx.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(desc)}">
@@ -49,7 +52,7 @@ ${d3 ? `<script type="application/json" id="i18n">${JSON.stringify({ js: t.js, i
 </head>
 <body>
 <!--email_off-->
-<div class="bg" aria-hidden="true"><i></i><i></i><b></b><b></b></div>
+<div class="bg" aria-hidden="true"><i></i><i></i><canvas></canvas></div>
 <a class="skip" href="#main">${t.skip}</a>
 <header><div class="wrap">
 <a class="logo" href="${r}"><img src="/brand/alx-mark.svg" alt="" width="62" height="28"><span dir="ltr">ALI LABS X<small>(PRIVATE) LIMITED</small></span></a>
@@ -57,8 +60,12 @@ ${d3 ? `<script type="application/json" id="i18n">${JSON.stringify({ js: t.js, i
 <nav id="nav" aria-label="${t.menu}">${['solutions', 'services', 'products', 'approach', 'company'].map((k, i) => `<a href="${r}${k}/"${here === k ? ' aria-current="page"' : ''}>${t.nav[i]}</a>`).join('')}<a href="/insights/"${l === 'en' ? '' : ' hreflang="en"'}${here === 'insights' ? ' aria-current="page"' : ''}>${UI[l].ins}</a><details class="lang"><summary aria-label="${t.lang}">${t.name}</summary><div>${L.map(x => `<a href="${other(x)}" lang="${x}" dir="${T[x].dir}"${x === l ? ' aria-current="true"' : ''}>${T[x].name}</a>`).join('')}</div></details><a class="btn" href="${mail('Project enquiry')}" data-lead="">${t.contact}</a></nav>
 </div></header>
 ${main}
-<footer>${noindex ? '' : `<div class="wrap f-map"><nav aria-label="${t.nav[0]}"><b>${t.nav[0]}</b>${t.sol.map((x, i) => `<a href="${r}solutions/${SLUGS[i]}/">${x[1]}</a>`).join('')}</nav><nav aria-label="${t.nav[2]}"><b>${t.nav[2]}</b>${P.map(k => `<a dir="ltr" href="${r}products/${k}.html">${N[k]}</a>`).join('')}<b>${t.nav[4]}</b><a href="${r}company/">${t.founder.th}</a>${['enterprise', 'careers', 'contact'].map((k, i) => `<a href="/${k}/"${en}>${t.foot[i]}</a>`).join('')}<a href="/insights/"${en}>${UI[l].ins}</a></nav></div>`}<div class="wrap"><div><span dir="ltr">&copy; 2026 ALI LABS X (PRIVATE) LIMITED</span><br>${t.ft}</div>
-<nav aria-label="${t.foot[5]}"><a href="/privacy.html"${en}>${t.priv}</a><a href="/terms.html"${en}>${t.terms}</a><a href="/cookies/"${en}>${t.foot[4]}</a><a href="/security/"${en}>${t.foot[3]}</a><button type="button" data-consent>${CO[l].open}</button><a href="https://github.com/Ali-Labs-X">GitHub</a><a href="https://www.linkedin.com/in/jahanzaib-ali-labsx">LinkedIn</a></nav></div></footer>
+<footer><div class="wrap f-top"><div class="f-brand"><a class="logo" href="${r}" aria-label="ALI LABS X"><img src="/brand/alx-mark.svg" alt="" width="74" height="34"><span dir="ltr">ALI LABS X<small>(PRIVATE) LIMITED</small></span></a><p>${t.desc}</p><a class="btn" href="${mail('Project enquiry')}" data-lead="">${t.start}</a><a class="f-mail" dir="ltr" href="mailto:Jahanzaib@alilabsx.com">Jahanzaib@alilabsx.com</a></div>
+<nav class="f-sol" aria-label="${t.nav[0]}"><b>${t.nav[0]}</b><div>${t.sol.map((x, i) => `<a href="${r}solutions/${SLUGS[i]}/">${x[1]}</a>`).join('')}</div></nav>
+<nav aria-label="${t.nav[2]}"><b>${t.nav[2]}</b><div>${P.map(k => `<a dir="ltr" href="${r}products/${k}.html">${N[k]}</a>`).join('')}</div></nav>
+<nav aria-label="${t.nav[4]}"><b>${t.nav[4]}</b><div><a href="${r}company/">${t.nav[4]}</a><a href="${r}services/">${t.nav[1]}</a><a href="${r}approach/">${t.nav[3]}</a><a href="/insights/"${en}>${UI[l].ins}</a>${['enterprise', 'careers', 'contact'].map((k, i) => `<a href="${r}${k}/">${t.foot[i]}</a>`).join('')}</div></nav>
+<nav aria-label="${t.foot[5]}"><b>${t.foot[5]}</b><div><a href="${r}privacy.html">${t.priv}</a><a href="${r}terms.html">${t.terms}</a><a href="${r}cookies/">${t.foot[4]}</a><a href="${r}security/">${t.foot[3]}</a><button type="button" data-consent>${CO[l].open}</button></div></nav></div>
+<div class="wrap f-base"><p><span dir="ltr">&copy; 2026 ALI LABS X (PRIVATE) LIMITED</span><span>${t.ft}</span></p><nav aria-label="${t.lang}">${L.map(x => `<a href="${other(x)}" lang="${x}"${x === l ? ' aria-current="true"' : ''}>${T[x].name}</a>`).join('')}</nav><nav aria-label="GitHub, LinkedIn"><a href="https://github.com/Ali-Labs-X">GitHub</a><a href="https://www.linkedin.com/in/jahanzaib-ali-labsx">LinkedIn</a></nav></div></footer>
 ${noindex ? '' : `<a class="wa" href="${WA(t)}" target="_blank" rel="noopener" aria-label="${t.wa}">${WI}</a>`}
 <!--/email_off-->
 </body>
@@ -128,7 +135,11 @@ ${[0, 1, 2].map(n => `<section class="chapter" data-ch="${n}"><h2>${t.ch[n]}</h2
 }
 // Company pages, English only
 const INFO = { enterprise: ['Enterprise software partner, agreements and security, ALI LABS X', 'How ALI LABS X works with enterprise teams, including agreements, security review, deployment choices and supplier details.'], careers: ['Careers at ALI LABS X', 'Open roles at ALI LABS X and how to introduce yourself to the engineering team.'], contact: ['Contact ALI LABS X', 'Reach ALI LABS X by discovery form, WhatsApp or email to discuss software, private AI and infrastructure.'], security: ['Security at ALI LABS X', 'How this website and your enquiry are protected, and how to report a security concern to ALI LABS X.'], cookies: ['Cookies, ALI LABS X', 'The cookies this website uses, what analytics counts if you accept, and how to change your choice.'] }
-for (const k in INFO) { mkdirSync(k, { recursive: true }); writeFileSync(`${k}/index.html`, page('en', `${k}/`, ...INFO[k], `<main id="main">${readFileSync(`content/${k}.part.html`, 'utf8')}</main>`, { alt: false })) }
+for (const k in INFO) { mkdirSync(k, { recursive: true }); writeFileSync(`${k}/index.html`, page('en', `${k}/`, ...INFO[k], `<main id="main">${readFileSync(`content/${k}.part.html`, 'utf8')}</main>`)) }
+for (const l of ['ar', 'ur', 'zh']) for (const [k, [title, desc, html]] of Object.entries(PI[l])) {
+  const path = k === 'privacy' || k === 'terms' ? `${k}.html` : `${k}/`; if (path.endsWith('/')) mkdirSync(`${l}/${path}`, { recursive: true })
+  writeFileSync(`${l}/${path.endsWith('/') ? path + 'index.html' : path}`, page(l, path, title, desc, `<main id="main">${html}</main>`))
+}
 // Articles, English only
 const body = b => b.map(([k, v]) => k === 'l' ? `<ul>${v.map(x => `<li>${x}</li>`).join('')}</ul>` : k === 'h' ? `<h2>${v}</h2>` : `<p>${v}</p>`).join('\n'), E0 = T.en
 const long = d => new Date(d + 'T00:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
@@ -147,11 +158,11 @@ ${ask}
 })
 writeFileSync('public/feed.xml', `<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0"><channel><title>ALI LABS X Insights</title><link>${H}/insights/</link><description>Guides on owning software and private AI</description><language>en</language>${INS.map(a => `<item><title>${esc(a.title)}</title><link>${H}/insights/${a.slug}/</link><guid>${H}/insights/${a.slug}/</guid><pubDate>${new Date(a.date).toUTCString()}</pubDate><description>${esc(a.desc)}</description></item>`).join('')}</channel></rss>\n`)
 for (const [f, title] of [['privacy', 'Privacy policy'], ['terms', 'Terms of use'], ['404', 'Page not found']])
-  writeFileSync(f + '.html', page('en', f + '.html', `${title}, ALI LABS X`, `${title} of ALI LABS X.`, `<main id="main">${readFileSync(`content/${f}.part.html`, 'utf8')}</main>`, { alt: false, noindex: f === '404' }))
-const KEYS = ['', 'solutions/', 'services/', 'products/', 'approach/', 'company/', ...P.map(k => `products/${k}.html`), ...SLUGS.map(k => `solutions/${k}/`)], DAY = new Date().toISOString().slice(0, 10)
+  writeFileSync(f + '.html', page('en', f + '.html', `${title}, ALI LABS X`, `${title} of ALI LABS X.`, `<main id="main">${readFileSync(`content/${f}.part.html`, 'utf8')}</main>`, { alt: f !== '404', noindex: f === '404' }))
+const KEYS = ['', 'solutions/', 'services/', 'products/', 'approach/', 'company/', ...P.map(k => `products/${k}.html`), ...SLUGS.map(k => `solutions/${k}/`), ...Object.keys(INFO).map(k => `${k}/`), 'privacy.html', 'terms.html'], DAY = new Date().toISOString().slice(0, 10)
 const last = f => { try { return execSync(`git log -1 --format=%cs -- "${f}"`, { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim() || DAY } catch { return DAY } }, fileOf = u => (u.replace(/^\//, '') + (u.endsWith('/') ? 'index.html' : ''))
 const alts = p => L.map(x => `<xhtml:link rel="alternate" hreflang="${x === 'zh' ? 'zh-Hans' : x}" href="${H}${root(x)}${p}"/>`).join('') + `<xhtml:link rel="alternate" hreflang="x-default" href="${H}/${p}"/>`
-writeFileSync('public/sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${L.flatMap(l => KEYS.map(p => `  <url><loc>${H}${root(l)}${p}</loc><lastmod>${last(fileOf(root(l) + p))}</lastmod>${alts(p)}</url>`)).concat([...Object.keys(INFO).map(k => k + '/'), 'insights/', ...INS.map(a => `insights/${a.slug}/`), 'privacy.html', 'terms.html'].map(p => `  <url><loc>${H}/${p}</loc><lastmod>${last(fileOf('/' + p))}</lastmod></url>`)).join('\n')}\n</urlset>\n`)
+writeFileSync('public/sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${L.flatMap(l => KEYS.map(p => `  <url><loc>${H}${root(l)}${p}</loc><lastmod>${last(fileOf(root(l) + p))}</lastmod>${alts(p)}</url>`)).concat(['insights/', ...INS.map(a => `insights/${a.slug}/`)].map(p => `  <url><loc>${H}/${p}</loc><lastmod>${last(fileOf('/' + p))}</lastmod></url>`)).join('\n')}\n</urlset>\n`)
 // For AI assistants and other automated readers
 const E = T.en, NAV = ['solutions', 'services', 'products', 'approach', 'company']
 const agents = `# ALI LABS X

@@ -158,11 +158,26 @@ test('the consent bar never covers the main button of a page', async () => {
   for (const x of ['', 'services/', 'products/', 'ar/', 'ur/company/', 'zh/']) { const p = await open(x, { ask: true }); const b = await p.locator('.hero .btn').boundingBox(), c = await p.locator('.consent').boundingBox(); if (b.y + b.height > c.y) bad.push([x, b.y + b.height, c.y]); await p.context().close() }
   assert.deepEqual(bad, [])
 })
-test('the background moves, and stays still when less motion is asked for', async () => {
-  for (const [m, n] of [['no-preference', true], ['reduce', false]]) { const p = await open('insights/', { reducedMotion: m }); assert.equal(await p.evaluate(() => document.getAnimations().some(a => /breathe|light/.test(a.animationName))), n); await p.context().close() }
+test('the background moves, and is a still picture when less motion is asked for', async () => {
+  for (const [m, moves] of [['no-preference', true], ['reduce', false]]) { const p = await open('insights/', { reducedMotion: m }); await p.locator('.bg.on').waitFor({ state: 'attached', timeout: 8000 }); await p.waitForTimeout(1500); const n = () => p.evaluate(() => Number(document.querySelector('.bg canvas').dataset.frames)), a = await n(); await p.waitForTimeout(1200); assert.equal(await n() > a, moves, m); assert.deepEqual(p.errors, []); await p.context().close() }
+})
+test('the background recovers when the browser takes the graphics away', async () => {
+  const p = await open('contact/'); await p.locator('.bg.on').waitFor({ state: 'attached' }); await p.evaluate(() => { const x = document.querySelector('.bg canvas').getContext('webgl').getExtension('WEBGL_lose_context'); x.loseContext(); setTimeout(() => x.restoreContext(), 300) }); await p.waitForTimeout(150); await p.locator('.bg.on').waitFor({ state: 'attached', timeout: 4000 }); assert.deepEqual(p.errors, []); await p.context().close()
 })
 test('email links are marked so the network does not rewrite them', () => {
   for (const f of PAGES) { const h = readFileSync(join(DIST, f), 'utf8'), a = h.indexOf('<!--email_off-->'), b = h.indexOf('<!--/email_off-->'); assert.ok(a > 0 && b > h.lastIndexOf('mailto:'), f); assert.ok(h.indexOf('mailto:') > a, f) }
+})
+test('the security policy blocks nothing the site uses', async () => {
+  const bad = []
+  for (const x of ['', 'products/', 'ur/contact/', 'zh/cookies/', 'insights/', 'solutions/', '404.html']) { const p = await open(x); p.on('console', m => /Content Security Policy/i.test(m.text()) && bad.push([x, m.text().slice(0, 140)])); await p.reload(); await p.waitForTimeout(1500); await p.locator('header [data-lead]').evaluate(e => e.click()); await p.locator('.lead-box[open]').waitFor(); await p.context().close() }
+  assert.deepEqual(bad, [])
+})
+test('company and policy pages exist in every language with the same parts as English', () => {
+  const read = f => readFileSync(join(DIST, f), 'utf8'), main = h => h.match(/<main[\s\S]*?<\/main>/)[0], count = (h, r) => (h.match(r) ?? []).length
+  for (const f of ['enterprise/index.html', 'careers/index.html', 'contact/index.html', 'security/index.html', 'cookies/index.html', 'privacy.html', 'terms.html']) {
+    const en = main(read(f)), nums = h => [...new Set(h.replace(/<[^>]+>/g, ' ').match(/\d{2,}/g) ?? [])].sort().join()
+    for (const l of ['ar', 'ur', 'zh']) { const h = read(`${l}/${f}`), m = main(h); for (const r of [/<h2/g, /<li/g, /<p[ >]/g, /<a /g, /data-consent/g]) assert.equal(count(m, r), count(en, r), `${l}/${f} ${r}`); assert.equal(nums(m).replace(/^11,|,11(?=,|$)/, ''), nums(en), `${l}/${f} numbers`); assert.ok(h.includes('hreflang="en" href="https://alilabsx.com/' + f.replace('index.html', ''))); assert.ok(read(f).includes(`href="https://alilabsx.com/${l}/`)) }
+  }
 })
 test('every internal link and file exists', () => {
   const bad = new Set(); let n = 0

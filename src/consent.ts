@@ -41,7 +41,7 @@ function show(focus: boolean) {
   if (!C || box) return
   const from = document.activeElement as HTMLElement | null
   box = document.createElement('section'); box.className = 'consent'; box.setAttribute('aria-labelledby', 'consent-h')
-  box.innerHTML = `<h2 id="consent-h" tabindex="-1">${C.title}</h2><p>${C.text} <a href="/cookies/">${C.more}</a></p><div class="consent-b"><button type="button" data-v="no">${C.no}</button><button type="button" data-v="yes">${C.yes}</button></div>`
+  box.innerHTML = `<h2 id="consent-h" tabindex="-1">${C.title}</h2><p>${C.text} <a href="${document.querySelector<HTMLAnchorElement>('.logo')!.pathname}cookies/">${C.more}</a></p><div class="consent-b"><button type="button" data-v="no">${C.no}</button><button type="button" data-v="yes">${C.yes}</button></div>`
   box.addEventListener('click', e => {
     const v = (e.target as HTMLElement).closest<HTMLElement>('[data-v]')?.dataset.v; if (!v) return
     const was = read(); write(v); box!.remove(); box = null; document.documentElement.classList.remove('asking'); if (focus) from?.focus()
