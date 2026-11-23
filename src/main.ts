@@ -3,6 +3,9 @@ import { startAssist } from './assist'
 import { startConsent } from './consent'
 import { startDemos, attach } from './demos'
 const root = document.documentElement; root.classList.add('js')
+// Another site must not show this page inside its own and steal clicks. GitHub Pages cannot send the header that stops it
+let framed = false; try { framed = window.top !== window.self && window.top!.location.origin !== location.origin } catch { framed = true }
+if (framed) { root.classList.add('framed'); document.body.inert = true; addEventListener('click', e => { e.preventDefault(); e.stopImmediatePropagation() }, true) }
 const menu = document.querySelector<HTMLButtonElement>('.menu')!, nav = document.getElementById('nav')!
 const set = (o: boolean) => { nav.classList.toggle('open', o); menu.setAttribute('aria-expanded', String(o)); menu.textContent = o ? menu.dataset.close! : menu.dataset.open! }
 if (document.getElementById('lead-text')) startAssist()

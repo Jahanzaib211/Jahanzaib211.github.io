@@ -179,6 +179,10 @@ test('company and policy pages exist in every language with the same parts as En
     for (const l of ['ar', 'ur', 'zh']) { const h = read(`${l}/${f}`), m = main(h); for (const r of [/<h2/g, /<li/g, /<p[ >]/g, /<a /g, /data-consent/g]) assert.equal(count(m, r), count(en, r), `${l}/${f} ${r}`); assert.equal(nums(m).replace(/^11,|,11(?=,|$)/, ''), nums(en), `${l}/${f} numbers`); assert.ok(h.includes('hreflang="en" href="https://alilabsx.com/' + f.replace('index.html', ''))); assert.ok(read(f).includes(`href="https://alilabsx.com/${l}/`)) }
   }
 })
+test('another site cannot show the page in a frame', async () => {
+  const c = await browser.newContext(); await c.route('https://other.test/', r => r.fulfill({ contentType: 'text/html', body: `<iframe src="${base}" width="900" height="600"></iframe>` })); await c.route(u => !['127.0.0.1', 'other.test'].includes(u.hostname), r => r.abort())
+  const p = await c.newPage(); await p.goto('https://other.test/'); const f = p.frames().find(x => x.url().startsWith(base)); assert.ok(f); await f.waitForFunction(() => document.documentElement.classList.contains('framed'), null, { timeout: 8000 }); assert.equal(await f.evaluate(() => getComputedStyle(document.body).display), 'none'); await c.close()
+})
 test('every internal link and file exists', () => {
   const bad = new Set(); let n = 0
   for (const f of PAGES) for (const m of readFileSync(join(DIST, f), 'utf8').matchAll(/\s(?:href|src|data-u)="(\/[^"]*)"/g)) { n++; const path = decodeURIComponent(m[1].split(/[?#]/)[0]), file = join(DIST, path.endsWith('/') ? path + 'index.html' : path); if (!existsSync(file) || statSync(file).isDirectory()) bad.add(`${f} ${path}`) }

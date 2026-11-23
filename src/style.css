@@ -221,3 +221,4 @@ footer .wrap{display:grid}.f-top{grid-template-columns:minmax(220px,1.1fr) minma
 @media(min-width:901px){footer{padding-inline-end:0}.f-base{padding-inline-end:0}}
 @media(min-width:1800px){footer,.f-top nav,.f-top nav>b{font-size:17px}.f-base,.f-base nav{font-size:15px}}
 [dir=rtl] .f-top nav a[dir=ltr]{text-align:right}
+.framed body{display:none}
