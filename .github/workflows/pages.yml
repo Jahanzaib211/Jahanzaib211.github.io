@@ -13,9 +13,6 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -28,8 +25,17 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
+  # A separate job, so the uploaded site is listed before it is asked for
+  deploy:
+    needs: publish
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
       - id: deploy
         uses: actions/deploy-pages@v4
+      - uses: actions/checkout@v4
       - name: Tell search engines about the new pages
         continue-on-error: true
         run: |

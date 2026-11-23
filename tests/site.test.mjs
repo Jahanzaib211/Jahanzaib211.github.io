@@ -25,7 +25,7 @@ after(async () => { await browser?.close(); server?.closeAllConnections(); serve
 async function open(path, { w = 1440, h = 900, ...o } = {}) {
   const { ask, ...rest } = o, c = await browser.newContext({ viewport: { width: w, height: h }, ...rest })
   await c.route(u => u.hostname !== '127.0.0.1', r => r.abort())
-  const p = await c.newPage(); p.errors = []; p.on('pageerror', e => p.errors.push(e.message)); if (o.ask !== true) await c.addCookies([{ name: 'alx_consent', value: '1.no', url: base }]); await p.goto(base + path); return p
+  const p = await c.newPage(); p.errors = []; p.on('pageerror', e => p.errors.push(e.message)); if (o.ask !== true) await c.addCookies([{ name: 'alx_consent', value: '2.no', url: base }]); await p.goto(base + path); return p
 }
 const ready = p => p.waitForFunction(() => document.documentElement.classList.contains('ready'), null, { timeout: 20000 })
 
@@ -131,13 +131,21 @@ test('nothing is counted before a choice or after Reject, and the choice is kept
   const p = await open('insights/', { ask: true }), h = await hits(p); await p.waitForTimeout(600); assert.equal(h.length, 0); assert.equal((await p.context().cookies()).length, 0)
   const [a, b] = await p.locator('.consent-b button').all(), x = await a.boundingBox(), y = await b.boundingBox(); assert.equal(x.width, y.width); assert.equal(x.height, y.height)
   await answer(p, 'no'); await p.locator('header nav a[href="/products/"]').click(); await p.waitForURL('**/products/'); await p.waitForTimeout(600); assert.equal(h.length, 0); assert.equal(await p.locator('.consent').count(), 0)
-  const c = await p.context().cookies(); assert.deepEqual([c.length, c[0].name, c[0].value, c[0].sameSite], [1, 'alx_consent', '1.no', 'Lax']); await p.context().close()
+  const c = await p.context().cookies(); assert.deepEqual([c.length, c[0].name, c[0].value, c[0].sameSite], [1, 'alx_consent', '2.no', 'Lax']); await p.context().close()
 })
 test('Accept counts visits without personal data and can be withdrawn', async () => {
   const p = await open('insights/', { ask: true }), h = await hits(p); await answer(p, 'yes'); await p.waitForTimeout(500); assert.equal(h.length, 1); assert.deepEqual(Object.keys(h[0]).sort(), ['device', 'event', 'language', 'path', 'source']); assert.equal(h[0].path, '/insights/')
   await p.locator('header nav a[href="/company/"]').click(); await p.waitForURL('**/company/'); await p.waitForTimeout(500); assert.equal(h.length, 2)
-  await p.locator('header [data-lead]').click(); await p.locator('.lead-box[open]').waitFor(); assert.equal(h.at(-1).event, 'form_open'); await p.locator('.lead-x').first().click()
+  await p.locator('header [data-lead]').click(); await p.locator('.lead-box[open]').waitFor(); assert.equal(h.at(-1).event, 'form_open'); assert.ok(!h.some(x => x.event === 'email')); await p.locator('.lead-x').first().click()
   const n = h.length; await p.locator('footer [data-consent]').click(); await answer(p, 'no'); await p.reload(); await p.waitForTimeout(600); assert.equal(h.length, n); await p.context().close()
+})
+test('Google loads only after Accept, once, and never after Reject', async () => {
+  const p = await open('insights/', { ask: true }); await hits(p); const g = []; p.on('request', r => { if (/google/.test(new URL(r.url()).hostname)) g.push(r.url()) })
+  await p.reload(); await p.waitForTimeout(600); assert.equal(g.length, 0)
+  await answer(p, 'yes'); await p.waitForTimeout(600); assert.deepEqual(g, ['https://www.googletagmanager.com/gtag/js?id=G-612W223T3P'])
+  const c = await p.evaluate(() => window.dataLayer.map(x => [...x])); assert.equal(c[0][0], 'consent'); assert.deepEqual([c[0][2].ad_storage, c[0][2].ad_user_data, c[0][2].ad_personalization], ['denied', 'denied', 'denied']); assert.equal(c.filter(x => x[0] === 'config').length, 1)
+  await p.evaluate(() => { document.cookie = '_ga=x; Path=/'; document.cookie = '_ga_612W223T3P=x; Path=/' })
+  await p.locator('footer [data-consent]').click(); await answer(p, 'no'); assert.deepEqual((await p.context().cookies()).map(x => x.name), ['alx_consent']); const n = g.length; await p.reload(); await p.waitForTimeout(600); assert.equal(g.length, n); await p.context().close()
 })
 test('a browser privacy signal is a rejection', async () => {
   const c = await browser.newContext(); await c.addInitScript(() => Object.defineProperty(navigator, 'globalPrivacyControl', { value: true })); await c.route(u => u.hostname !== '127.0.0.1', r => r.abort()); const p = await c.newPage(), h = await hits(p); await p.goto(base); await p.waitForTimeout(600); assert.equal(await p.locator('.consent').count(), 0); assert.equal(h.length, 0); await c.close()
@@ -151,7 +159,10 @@ test('the consent bar never covers the main button of a page', async () => {
   assert.deepEqual(bad, [])
 })
 test('the background moves, and stays still when less motion is asked for', async () => {
-  for (const [m, n] of [['no-preference', true], ['reduce', false]]) { const p = await open('insights/', { reducedMotion: m }); assert.equal(await p.evaluate(() => document.getAnimations().some(a => /breathe|run|via/.test(a.animationName))), n); await p.context().close() }
+  for (const [m, n] of [['no-preference', true], ['reduce', false]]) { const p = await open('insights/', { reducedMotion: m }); assert.equal(await p.evaluate(() => document.getAnimations().some(a => /breathe|light/.test(a.animationName))), n); await p.context().close() }
+})
+test('email links are marked so the network does not rewrite them', () => {
+  for (const f of PAGES) { const h = readFileSync(join(DIST, f), 'utf8'), a = h.indexOf('<!--email_off-->'), b = h.indexOf('<!--/email_off-->'); assert.ok(a > 0 && b > h.lastIndexOf('mailto:'), f); assert.ok(h.indexOf('mailto:') > a, f) }
 })
 test('every internal link and file exists', () => {
   const bad = new Set(); let n = 0
