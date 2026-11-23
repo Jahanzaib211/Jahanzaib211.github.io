@@ -1,0 +1,5 @@
+// Usage: node scripts/subset-chinese.mjs NotoSansSC.ttf (rerun when content/zh.mjs changes)
+import subset from 'subset-font'; import { readFileSync, writeFileSync } from 'node:fs'
+const text = [...new Set(readFileSync('content/zh.mjs', 'utf8') + '中文，。？！、')].join('')
+const out = await subset(readFileSync(process.argv[2]), text, { targetFormat: 'woff2', variationAxes: { wght: { min: 400, max: 700 } } })
+writeFileSync('public/assets/fonts/alx-chinese.woff2', out); console.log(out.length)
