@@ -1,6 +1,6 @@
 import './style.css'
 import { startAssist } from './assist'
-import { startDemos, startStory, attach } from './demos'
+import { startDemos, attach } from './demos'
 const root = document.documentElement; root.classList.add('js')
 const menu = document.querySelector<HTMLButtonElement>('.menu')!, nav = document.getElementById('nav')!
 const set = (o: boolean) => { nav.classList.toggle('open', o); menu.setAttribute('aria-expanded', String(o)); menu.textContent = o ? menu.dataset.close! : menu.dataset.open! }
@@ -10,7 +10,7 @@ nav.addEventListener('click', e => { if ((e.target as HTMLElement).closest('a'))
 addEventListener('keydown', e => { if (e.key === 'Escape' && nav.classList.contains('open')) { set(false); menu.focus() } })
 const canvas = document.querySelector<HTMLCanvasElement>('#world')
 if (canvas) {
-  if (document.getElementById('solutions')) startDemos(); else startStory()
+  startDemos()
   const off = () => root.classList.add('no3d')
   const gl = (() => { try { return !!document.createElement('canvas').getContext('webgl2') } catch { return false } })()
   const start = () => import('./scene').then(m => { attach(m.createWorld(canvas, matchMedia('(prefers-reduced-motion:reduce)').matches)); root.classList.add('ready'); dispatchEvent(new Event('world-ready')) }).catch(off)
@@ -25,3 +25,8 @@ document.addEventListener('click', e => {
   const sol = a.dataset.lead === 'sol' ? Number(document.querySelector<HTMLInputElement>('[name=sol]:checked')?.value ?? 0) : null
   import('./lead').then(m => m.openLead(sol === null ? a.dataset.lead! : 'Solution', sol, a)).catch(() => { location.href = (a as HTMLAnchorElement).href })
 })
+
+// Links from the earlier one-page site
+const moved: Record<string, string> = { solutions: 'solutions/', services: 'services/', products: 'products/', approach: 'approach/', infrastructure: 'approach/', founder: 'company/', team: 'company/#team', company: 'company/', 'nova-bots': 'products/#nova-bots', nova: 'products/#nova', loco: 'products/#loco', storeloom: 'products/#storeloom' }
+const was = moved[location.hash.slice(1)]
+if (was && /^\/(ar\/|ur\/|zh\/)?(index\.html)?$/.test(location.pathname)) location.replace(location.pathname.replace('index.html', '') + was)

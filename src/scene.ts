@@ -46,7 +46,7 @@ export function createWorld(canvas: HTMLCanvasElement, reduced: boolean): World 
     e = { m, pod, w: 0, home, off, spin: home.map((_, i) => new Vector3(Math.sin(i * 1.9) * 0.9, Math.cos(i * 2.7) * 1.1, 0)) }; made.set(n, e); return e
   }
   const base = new Map<Object3D, Vector3>()
-  const sections: Stop[] = [...document.querySelectorAll<HTMLElement>('[data-form]')].map(el => ({ el, text: el.closest<HTMLElement>('.story-col') ?? el.querySelector<HTMLElement>('.panel,.say-big,.f-col') ?? el, form: el.dataset.form!, side: Number(el.dataset.side ?? 1) * (document.dir === 'rtl' ? -1 : 1) }))
+  const sections: Stop[] = [...document.querySelectorAll<HTMLElement>('[data-form]')].map(el => ({ el, text: el.closest<HTMLElement>('.story-col') ?? el.querySelector<HTMLElement>('.panel,.say-big,.f-col,.h-text') ?? el, form: el.dataset.form!, side: Number(el.dataset.side ?? 1) * (document.dir === 'rtl' ? -1 : 1) }))
   let target = sections[0]?.form ?? 'logo', override = '', cur = sections[0], logoW = sections[0]?.form === 'logo' ? 1 : 0, px = 0, py = 0, mx = 0, my = 0, sc = 0.62, boost = 0, dirty = true
   const flash = { v: 0 }
   const home = sections[0]?.form === 'logo'

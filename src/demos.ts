@@ -93,9 +93,19 @@ function founder() {
   el.slice(0, 4).forEach(e => { const go = () => world?.act('marks', +e.dataset.mark!), back = () => { cur = -2; pick() }; e.addEventListener('pointerenter', go); e.addEventListener('pointerleave', back); e.addEventListener('focusin', go); e.addEventListener('focusout', back) })
   addEventListener('world-ready', () => { cur = -2; pick() }); pick()
 }
-export function startDemos() { founder(); solutions(); deployment(); bots(); nova(); loco(); store() }
+export function startDemos() {
+  const has = (id: string) => !!document.getElementById(id)
+  if (has('founder')) founder()
+  if (has('solutions')) solutions()
+  if (has('infrastructure')) deployment()
+  if (has('bots-demo')) bots()
+  if (has('nova-demo')) nova()
+  if (has('loco-demo')) loco()
+  if (has('store-demo')) store()
+  startStory()
+}
 // Product pages: the model answers each chapter as it is read
-export function startStory() {
+function startStory() {
   const page = $<HTMLElement>('[data-product]'); if (!page) return
   const form = page.dataset.product!, ch = $$<HTMLElement>('[data-ch]', page)
   const say: Record<string, (string | number)[]> = { bots: [0, 1, 2, 3, -1], nova: [0, 1, 3, 5, 0], loco: [0.15, 0.4, 0.75, 1, 0], storeloom: ['#0b7a5b', '#7a3ef0', '#0268f4', '#04a9d6', '#0268f4'] }
