@@ -76,9 +76,20 @@ function store() {
     ;(d.add ? $<HTMLElement>('.blk:last-child [data-rm]', prev) : prev.querySelector<HTMLElement>('button:not([disabled])') ?? $<HTMLElement>('[data-add]:not([disabled])', box))?.focus({ preventScroll: true })
   }); draw()
 }
+// The problem in the middle of the screen is the chosen one, and the model stands beside it
 function solutions() {
-  const sec = $('#solutions'), ask = $<HTMLAnchorElement>('#sol-ask')
-  $$<HTMLInputElement>('input[name=sol]').forEach(i => i.addEventListener('change', () => { world?.setForm('desk'); world?.act('desk', +i.value); world?.pulse(); ask.href = i.dataset.m! }))
+  const ask = $<HTMLAnchorElement>('#sol-ask')!, all = $$<HTMLInputElement>('input[name=sol]'), rows = all.map(i => i.closest<HTMLElement>('label')!)
+  let cur = 0, hold = 0, wait = false
+  const show = (n: number) => { if (n === cur) return; cur = n; all[n].checked = true; rows.forEach((r, i) => r.toggleAttribute('data-pin', i === n)); ask.href = all[n].dataset.m!; world?.act('desk', n) }
+  const still = matchMedia('(prefers-reduced-motion:reduce)').matches
+  all.forEach((i, n) => i.addEventListener('change', () => { hold = performance.now() + 1100; show(n); world?.pulse(); rows[n].scrollIntoView({ block: innerWidth > 900 ? 'center' : 'nearest', inline: 'center', behavior: still ? 'auto' : 'smooth' }) }))
+  const pick = () => { wait = false; if (performance.now() < hold) return; const side = innerWidth <= 900, mid = (side ? innerWidth : innerHeight) * 0.5; let n = 0, d = 1e9; rows.forEach((r, i) => { const b = r.getBoundingClientRect(), k = Math.abs((side ? b.left + b.right : b.top + b.bottom) / 2 - mid); if (k < d) { d = k; n = i } })
+    // The first and last cards cannot reach the middle of a phone screen
+    if (side) { const w = list.scrollWidth - list.clientWidth, x = Math.abs(list.scrollLeft); if (x < 8) n = 0; else if (x > w - 8) n = rows.length - 1 }
+    show(n) }
+  const list = $<HTMLElement>('.sols')!, onScroll = () => { if (!wait) { wait = true; requestAnimationFrame(pick) } }
+  addEventListener('scroll', onScroll, { passive: true }); list.addEventListener('scroll', onScroll, { passive: true })
+  addEventListener('world-ready', () => world?.act('desk', cur))
 }
 function founder() {
   const el = $$<HTMLElement>('#founder [data-mark]'); if (!el.length) return

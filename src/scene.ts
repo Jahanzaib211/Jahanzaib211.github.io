@@ -48,6 +48,7 @@ export function createWorld(canvas: HTMLCanvasElement, reduced: boolean): World 
   const base = new Map<Object3D, Vector3>()
   const sections: Stop[] = [...document.querySelectorAll<HTMLElement>('[data-form]')].map(el => ({ el, text: el.closest<HTMLElement>('.story-col') ?? el.querySelector<HTMLElement>('.panel,.say-big,.f-col,.h-text') ?? el, form: el.dataset.form!, side: Number(el.dataset.side ?? 1) * (document.dir === 'rtl' ? -1 : 1) }))
   let target = sections[0]?.form ?? 'logo', override = '', cur = sections[0], logoW = sections[0]?.form === 'logo' ? 1 : 0, px = 0, py = 0, mx = 0, my = 0, sc = 0.62, boost = 0, dirty = true
+  let hold = 0
   const flash = { v: 0 }
   const home = sections[0]?.form === 'logo'
   const locate = () => {
@@ -79,12 +80,14 @@ export function createWorld(canvas: HTMLCanvasElement, reduced: boolean): World 
       if (box.bottom < -vh || box.top > vh * 2) continue
       if (s.form === 'logo') {
         const first = s === sections[0]
-        if (first) { const at0 = box.top + scrollY, y = ((wide ? 0 : 2.2 / unit) + (at0 - box.top)) * unit, on = box.bottom > vh * 0.12; if (on || !logo) logo = { y, x: wide ? s.side * 2.55 * Math.min(cam.aspect / 1.7, 1.1) : 0, s: wide ? 0.62 * fit : 0.56, on } }
+        if (first) { const at0 = box.top + scrollY, y = wide ? (vh / 2 - (box.top + box.height / 2)) * unit : (2.2 / unit + (at0 - box.top)) * unit, on = box.bottom > vh * 0.12; if (on || !logo) logo = { y, x: wide ? s.side * 2.55 * Math.min(cam.aspect / 1.7, 1.1) : 0, s: wide ? 0.62 * fit : 0.56, on } }
         else { const h = s.el.querySelector('h2')!.getBoundingClientRect(), on = h.top < vh * 1.25; if (on) logo = { y: (vh / 2 - (box.top + (h.top - box.top) * 0.52)) * unit, x: 0, s: wide ? 0.62 : 0.5, on } }
         continue
       }
       const name = s === cur && override ? override : (s.el.dataset.active ?? s.form); let c: number
-      if (wide) { const q = s.text.getBoundingClientRect(), half = Math.min(q.height / 2, vh * 0.36); c = Math.min(Math.max(vh / 2, q.top + half), q.bottom - half) }
+      const pin = s.el.querySelector<HTMLElement>('[data-pin]')
+      if (wide && pin) { const q = pin.getBoundingClientRect(), want = (q.top + q.bottom) / 2 - box.top; hold += (want - (hold || want)) * k1; if (!hold) hold = want; c = box.top + hold; c = Math.min(Math.max(c, Math.min(vh * 0.4, box.top + box.height)), Math.max(vh * 0.62, box.top)) }
+      else if (wide) { const q = s.text.getBoundingClientRect(), half = Math.min(q.height / 2, vh * 0.36); c = Math.min(Math.max(vh / 2, q.top + half), q.bottom - half) }
       else c = box.top + Math.min(vh * 0.3, 270) + (s.el.classList.contains('story-top') ? 0 : 30)
       placed.set(name, { y: (vh / 2 - c) * unit, side: s.side, on: c > -vh * 0.2 && c < vh * 1.12 }); if (Math.abs(c - vh / 2) < vh * 1.4) get(name)
     }
