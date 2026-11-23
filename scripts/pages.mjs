@@ -6,7 +6,9 @@ const P = ['nova-bots', 'nova', 'loco', 'storeloom'], N = { 'nova-bots': 'NOVA B
 const CODE = { 'nova-bots': 'https://github.com/Ali-Labs-X/nova-bots', nova: 'https://github.com/Ali-Labs-X/nova', loco: 'https://github.com/Ali-Labs-X/loco' }
 const root = l => (l === 'en' ? '/' : `/${l}/`), H = 'https://alilabsx.com', mail = s => `mailto:Jahanzaib@alilabsx.com?subject=${encodeURIComponent(s)}`
 const esc = s => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')
-const ld = JSON.stringify({ '@context': 'https://schema.org', '@type': 'Organization', name: 'ALI LABS X', legalName: 'ALI LABS X (PRIVATE) LIMITED', url: H + '/', logo: H + '/brand/alx-mark.svg', email: 'Jahanzaib@alilabsx.com', telephone: '+923066422442', foundingDate: '2026-11-18', founder: { '@type': 'Person', name: 'Jahanzaib Ali Ashraf', jobTitle: 'Founder and CEO', sameAs: ['https://www.linkedin.com/in/jahanzaib-ali-labsx', 'https://github.com/Jahanzaib211'] }, address: { '@type': 'PostalAddress', addressLocality: 'Lahore', addressRegion: 'Punjab', addressCountry: 'PK' } })
+const ORG = { '@type': 'Organization', '@id': H + '/#org', name: 'ALI LABS X', legalName: 'ALI LABS X (PRIVATE) LIMITED', url: H + '/', logo: H + '/brand/alx-mark.svg', email: 'Jahanzaib@alilabsx.com', telephone: '+923066422442', contactPoint: { '@type': 'ContactPoint', contactType: 'sales', telephone: '+923066422442', email: 'Jahanzaib@alilabsx.com', availableLanguage: ['en', 'ar', 'ur', 'zh'] }, sameAs: ['https://github.com/Ali-Labs-X'], foundingDate: '2026-11-18', founder: { '@type': 'Person', name: 'Jahanzaib Ali Ashraf', jobTitle: 'Founder and CEO', sameAs: ['https://www.linkedin.com/in/jahanzaib-ali-labsx', 'https://github.com/Jahanzaib211'] }, address: { '@type': 'PostalAddress', addressLocality: 'Lahore', addressRegion: 'Punjab', addressCountry: 'PK' } }
+const ORGS = { en: 'Home', ar: 'الرئيسية', ur: 'صفحہ اول', zh: '首页' }
+const graph = (l, url, title, desc, crumbs) => JSON.stringify({ '@context': 'https://schema.org', '@graph': [ORG, { '@type': 'WebSite', '@id': H + '/#site', url: H + '/', name: 'ALI LABS X', publisher: { '@id': H + '/#org' }, inLanguage: ['en', 'ar', 'ur', 'zh-Hans'] }, { '@type': 'WebPage', '@id': url, url, name: title, description: desc, inLanguage: l === 'zh' ? 'zh-Hans' : l, isPartOf: { '@id': H + '/#site' }, about: { '@id': H + '/#org' } }, ...(crumbs.length > 1 ? [{ '@type': 'BreadcrumbList', itemListElement: crumbs.map(([name, item], i) => ({ '@type': 'ListItem', position: i + 1, name, item })) }] : [])] }).replace(/</g, '\\u003c')
 function page(l, path, title, desc, main, { alt = true, home = false, d3 = false, noindex = false, here = '' } = {}) {
   const t = T[l], r = root(l), url = H + r + path, other = x => root(x) + (alt ? path : '')
   return `<!doctype html>
@@ -26,9 +28,12 @@ ${alt && !noindex ? L.map(x => `<link rel="alternate" hreflang="${x === 'zh' ? '
 <meta property="og:title" content="${esc(title)}">
 <meta property="og:description" content="${esc(desc)}">
 <meta property="og:url" content="${url}">
+<meta property="og:locale" content="${{ en: 'en_US', ar: 'ar_AR', ur: 'ur_PK', zh: 'zh_CN' }[l]}">
 <meta property="og:image" content="${H}/og-image.png">
+<meta property="og:image:alt" content="ALI LABS X">
+<link rel="manifest" href="/site.webmanifest">
 <meta name="twitter:card" content="summary_large_image">
-${noindex ? '' : `<script type="application/json" id="lead-text">${JSON.stringify({ ...Object.fromEntries(Object.entries(t.lead).filter(([k, v]) => typeof v === 'string' || ['tips', 'more', 'nextP'].includes(k))), name: t.name }).replace(/</g, '\\u003c')}</script>\n`}${home ? `<script type="application/ld+json">${ld}</script>\n` : ''}${d3 ? `<script type="application/json" id="i18n">${JSON.stringify({ js: t.js, inf: t.inf, ask: t.solAsk }).replace(/</g, '\\u003c')}</script>\n` : ''}${[l === 'zh' ? 'alx-chinese' : 0, t.dir === 'rtl' ? 'alexandria-arabic' : 0, 'alexandria-latin'].filter(Boolean).map(f => `<link rel="preload" href="/assets/fonts/${f}.woff2" as="font" type="font/woff2" crossorigin>`).join('\n')}
+${noindex ? '' : `<script type="application/json" id="lead-text">${JSON.stringify({ ...Object.fromEntries(Object.entries(t.lead).filter(([k, v]) => typeof v === 'string' || ['tips', 'more', 'nextP'].includes(k))), name: t.name }).replace(/</g, '\\u003c')}</script>\n`}${noindex ? '' : `<script type="application/ld+json">${graph(l, url, title, desc, [[ORGS[l], H + r], ...(path.startsWith('products/') && path !== 'products/' ? [[t.nav[2], H + r + 'products/']] : []), ...(path ? [[title, url]] : [])])}</script>\n`}${d3 ? `<script type="application/json" id="i18n">${JSON.stringify({ js: t.js, inf: t.inf, ask: t.solAsk }).replace(/</g, '\\u003c')}</script>\n` : ''}${[l === 'zh' ? 'alx-chinese' : 0, t.dir === 'rtl' ? 'alexandria-arabic' : 0, 'alexandria-latin'].filter(Boolean).map(f => `<link rel="preload" href="/assets/fonts/${f}.woff2" as="font" type="font/woff2" crossorigin>`).join('\n')}
 <link rel="stylesheet" href="/src/style.css">
 <script type="module" src="/src/main.ts"></script>
 </head>
@@ -95,5 +100,50 @@ ${[0, 1, 2].map(n => `<section class="chapter" data-ch="${n}"><h2>${t.ch[n]}</h2
 }
 for (const [f, title] of [['privacy', 'Privacy policy'], ['terms', 'Terms of use'], ['404', 'Page not found']])
   writeFileSync(f + '.html', page('en', f + '.html', `${title}, ALI LABS X`, `${title} of ALI LABS X.`, `<main id="main">${readFileSync(`content/${f}.part.html`, 'utf8')}</main>`, { alt: false, noindex: f === '404' }))
-const urls = L.flatMap(l => ['', 'solutions/', 'services/', 'products/', 'approach/', 'company/', ...P.map(k => `products/${k}.html`)].map(p => root(l) + p)).concat('/privacy.html', '/terms.html')
-writeFileSync('public/sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(u => `  <url><loc>${H}${u}</loc></url>`).join('\n')}\n</urlset>\n`)
+const KEYS = ['', 'solutions/', 'services/', 'products/', 'approach/', 'company/', ...P.map(k => `products/${k}.html`)], DAY = new Date().toISOString().slice(0, 10)
+const alts = p => L.map(x => `<xhtml:link rel="alternate" hreflang="${x === 'zh' ? 'zh-Hans' : x}" href="${H}${root(x)}${p}"/>`).join('') + `<xhtml:link rel="alternate" hreflang="x-default" href="${H}/${p}"/>`
+writeFileSync('public/sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${L.flatMap(l => KEYS.map(p => `  <url><loc>${H}${root(l)}${p}</loc><lastmod>${DAY}</lastmod>${alts(p)}</url>`)).concat(['privacy', 'terms'].map(p => `  <url><loc>${H}/${p}.html</loc><lastmod>${DAY}</lastmod></url>`)).join('\n')}\n</urlset>\n`)
+// For AI assistants and other automated readers
+const E = T.en, NAV = ['solutions', 'services', 'products', 'approach', 'company']
+const agents = `# ALI LABS X
+
+> ${E.desc}
+
+ALI LABS X (PRIVATE) LIMITED is registered with the Securities and Exchange Commission of Pakistan, number 0366968, incorporated 18 November 2026, located in Lahore, Pakistan.
+
+## Pages
+
+${NAV.map((k, i) => `- [${E.nav[i]}](${H}/${k}/): ${[E.solP, E.two[1][1], E.prP, E.apH, E.founder.ch][i]}`).join('\n')}
+
+## Products
+
+Demonstrations are private and by request.
+
+${P.map(k => `- [${N[k]}](${H}/products/${k}.html): ${E.p[k]}`).join('\n')}
+
+## Services
+
+${E.svc.map(x => `- ${x[0]}: ${x[1]}`).join('\n')}
+
+## Problems we solve
+
+${E.sol.map(x => `- ${x[0]}: ${x[1].toLowerCase()}`).join('\n')}
+
+## Contact
+
+- Email: Jahanzaib@alilabsx.com
+- WhatsApp: +92 306 6422442
+- Discovery form: the "${E.lead.open}" button on any page
+
+Prices are not published. Please do not submit the form on behalf of a person without their request.
+
+## Languages
+
+${L.map(l => `- [${T[l].name}](${H}${root(l)})`).join('\n')}
+
+## Policies
+
+- [Privacy](${H}/privacy.html)
+- [Terms](${H}/terms.html)
+`
+for (const f of ['llms.txt', 'agents.txt']) writeFileSync('public/' + f, agents)
