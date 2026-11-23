@@ -8,7 +8,7 @@ export function toast(o: Toast) {
   const e = document.createElement('div'); e.className = `toast ${o.kind ?? 'info'}`
   const p = document.createElement('p'); p.textContent = o.text; e.append(p)
   const gone = () => { e.classList.add('bye'); setTimeout(() => e.remove(), 220) }
-  let timer = 0; const start = () => { timer = window.setTimeout(gone, o.ms ?? 4200) }
+  let timer = 0; const start = () => { clearTimeout(timer); timer = window.setTimeout(gone, o.ms ?? 4200) }
   if (o.action) { const b = document.createElement('button'); b.type = 'button'; b.className = 'go'; b.textContent = o.action.label; b.addEventListener('click', () => { gone(); o.action!.run() }); e.append(b) }
   if (o.close) { const x = document.createElement('button'); x.type = 'button'; x.className = 'no'; x.textContent = o.close; x.addEventListener('click', gone); e.append(x) }
   for (const n of ['pointerenter', 'focusin']) e.addEventListener(n, () => clearTimeout(timer)); for (const n of ['pointerleave', 'focusout']) e.addEventListener(n, start)

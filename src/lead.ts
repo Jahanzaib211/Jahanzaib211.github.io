@@ -2,6 +2,7 @@
 import bundled from './form.json'
 import { toast, clearToasts } from './toast'
 import { formOpened } from './assist'
+import { track } from './consent'
 type T = Record<string, any>
 type Lang = 'en' | 'ar' | 'ur' | 'zh'
 type Opt = { id: string; label: Record<Lang, string> }
@@ -57,14 +58,14 @@ function make() {
   f.addEventListener('input', e => { (e.target as HTMLElement).closest('[data-need]')?.classList.remove('bad'); summary() })
   for (const n of ['input', 'change']) f.addEventListener(n, e => (e.target as HTMLElement).closest('[data-need]')?.querySelectorAll('[aria-invalid]').forEach(x => x.removeAttribute('aria-invalid')))
   f.addEventListener('focusout', e => { const i = e.target as HTMLInputElement; if (i.name === 'email' && i.value && !mailOk(i.value)) { i.closest('[data-need]')!.classList.add('bad'); box!.querySelector('.err')!.textContent = L.mailErr } })
-  box.addEventListener('close', () => { document.documentElement.style.overflow = ''; from?.focus(); if (!box!.querySelector('.lead-done') && far > 0) toast({ text: L.tKeep, action: { label: L.next, run: () => { void openLead(ctx, null, from!, true) } }, ms: 6500 }) })
+  box.addEventListener('close', () => { document.documentElement.style.overflow = ''; (from?.isConnected ? from : document.querySelector<HTMLElement>('header [data-lead]'))?.focus(); if (!box!.querySelector('.lead-done') && far > 0) toast({ text: L.tKeep, action: { label: L.next, run: () => { void openLead(ctx, null, from!, true) } }, ms: 6500 }) })
   f.addEventListener('submit', e => { e.preventDefault(); advance() })
 }
 const form = () => box!.querySelector('form')!, data = () => new FormData(form()), mailOk = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim())
 function advance() {
   if (!check()) return
   if (step === LAST) { void finish(); return }
-  step++; const fresh = step > far; far = Math.max(far, step); draw(); if (fresh) toast({ kind: 'ok', text: L['t' + step], ms: 2600 })
+  step++; const fresh = step > far; far = Math.max(far, step); draw(); if (fresh) track('form_step'); if (fresh) toast({ kind: 'ok', text: L['t' + step], ms: 2600 })
 }
 function summary() {
   const ul = box!.querySelector('.lead-sum ul')!, items = ROWS.slice(0, 9).map(([k]) => answer(k)).filter(Boolean)
@@ -101,22 +102,25 @@ async function finish() {
   btn.disabled = true; btn.textContent = L.sending; let ref = ''
   try { const r = await fetch(`${API}/leads`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal: AbortSignal.timeout(12000) }); if (r.ok) ref = String((await r.json()).reference ?? '') } catch { /* offered by email below */ }
   btn.disabled = false; btn.textContent = L.send
-  if (ref) { formOpened() }
+  if (ref) track('form_sent')
   toast(ref ? { kind: 'ok', text: L.tSent } : { kind: 'warn', text: L.tFail, ms: 7000 })
   const href = `mailto:Jahanzaib@alilabsx.com?subject=${encodeURIComponent('Discovery brief, ' + s('company'))}&body=${encodeURIComponent(text)}`
-  const v = document.createElement('div'); v.className = 'lead-done'
+  const v = document.createElement('div'); v.className = ref ? 'lead-done sent' : 'lead-done'
   const short = ref.replace(/-[ABC]\d+-/, '-')
   v.innerHTML = `<h2 tabindex="-1">${esc(ref ? L.sent : L.done)}</h2><p>${esc(ref ? L.sentP : L.fail)}</p>${ref ? `<div class="ref"><span>${esc(L.refT)}</span><b dir="ltr">${esc(short)}</b><button type="button" class="lead-x copyref">${esc(L.copyRef)}</button></div><h3>${esc(L.nextH)}</h3><ol class="lead-next">${L.nextP.map((x: string) => `<li>${esc(x)}</li>`).join('')}</ol><button type="button" class="btn fin">${esc(L.back2)}</button>` : ''}`
   v.querySelector('.copyref')?.addEventListener('click', () => void navigator.clipboard?.writeText(short).then(() => toast({ kind: 'ok', text: L.tCopy, ms: 2000 })))
   v.querySelector('.fin')?.addEventListener('click', () => box!.close())
-  if (!ref) { const p = document.createElement('pre'); p.dir = 'ltr'; p.textContent = text; const r = document.createElement('div'); r.className = 'row'; r.innerHTML = `<a class="btn" href="${esc(href)}">${esc(L.mail)}</a><button type="button" class="lead-x copy">${esc(L.copy)}</button>`; v.append(p, r); r.querySelector('.copy')!.addEventListener('click', async e => { const c = e.currentTarget as HTMLElement; try { await navigator.clipboard.writeText(text); c.textContent = L.copied; toast({ kind: 'ok', text: L.tCopy, ms: 2000 }) } catch { getSelection()?.selectAllChildren(p) } }) }
-  const f = form(); box!.classList.add('finished'); f.querySelectorAll('fieldset,.lead-nav,.err,.lead-bar').forEach(e => e.remove()); f.querySelector('.where')!.textContent = ''; f.append(v); v.querySelector<HTMLElement>('h2')!.focus()
+  if (!ref) { const p = document.createElement('pre'); p.dir = 'ltr'; p.textContent = text; const r = document.createElement('div'); r.className = 'row'; r.innerHTML = `<a class="btn" href="${esc(href)}">${esc(L.mail)}</a><button type="button" class="lead-x copy">${esc(L.copy)}</button><button type="button" class="lead-x again">${esc(L.back)}</button>`; v.append(p, r); r.querySelector('.again')!.addEventListener('click', () => { reopen(); draw() }); r.querySelector('.copy')!.addEventListener('click', async e => { const c = e.currentTarget as HTMLElement; try { await navigator.clipboard.writeText(text); c.textContent = L.copied; toast({ kind: 'ok', text: L.tCopy, ms: 2000 }) } catch { getSelection()?.selectAllChildren(p) } }) }
+  const f = form(); box!.classList.add('finished'); if (ref) f.querySelectorAll('fieldset,.lead-nav,.err,.lead-bar').forEach(e => e.remove()); f.querySelector('.where')!.textContent = ''; f.append(v); v.querySelector<HTMLElement>('h2')!.focus()
 }
+// A brief that could not be sent stays in the form, with the same key, so it can be sent again
+function reopen() { box!.querySelector('.lead-done')?.remove(); box!.classList.remove('finished') }
 export async function openLead(context: string, solution: number | null, opener: HTMLElement, resume = false) {
   await Promise.race([ready, new Promise(r => setTimeout(r, 900))])
-  if (!box || box.querySelector('.lead-done')) { box?.remove(); make(); key = crypto.randomUUID(); opened = performance.now(); step = 0 }
+  if (!box || box.querySelector('.lead-done.sent')) { box?.remove(); try { make() } catch (e) { box?.remove(); box = null; throw e } key = crypto.randomUUID(); opened = performance.now(); step = 0 }
   if (box!.open) return
-  ctx = context; from = opener; formOpened(); clearToasts()
+  reopen()
+  ctx = context; from = opener; formOpened(); track('form_open'); clearToasts()
   if (solution !== null) { const i = box!.querySelector<HTMLInputElement>(`[name=problem][value="${bundled.problems[solution]?.id}"]`); if (i) { i.checked = true; far = Math.max(far, 1); step = 1 } } else if (!resume && !far) step = 0
-  document.documentElement.style.overflow = 'hidden'; box!.showModal(); draw()
+  box!.showModal(); document.documentElement.style.overflow = 'hidden'; draw()
 }
