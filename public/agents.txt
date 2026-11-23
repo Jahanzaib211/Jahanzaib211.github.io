@@ -1,0 +1,69 @@
+# ALI LABS X
+
+> ALI LABS X designs and builds software, private AI and infrastructure that organizations can own. You define the problem. We engineer the solution.
+
+ALI LABS X (PRIVATE) LIMITED is registered with the Securities and Exchange Commission of Pakistan, number 0366968, incorporated 18 November 2026, located in Lahore, Pakistan.
+
+## Pages
+
+- [Solutions](https://alilabsx.com/solutions/): Choose one. We build the solution as infrastructure that belongs to you.
+- [Services](https://alilabsx.com/services/): When nothing fits, we design and engineer a custom system around the way you work.
+- [Products](https://alilabsx.com/products/): Each began with a problem we wanted to understand properly. Explore the idea, then read the story of the solution we designed.
+- [Approach](https://alilabsx.com/approach/): A disciplined path from problem to deployment
+- [Company](https://alilabsx.com/company/): A company built on established work.
+
+## Products
+
+Demonstrations are private and by request.
+
+- [NOVA BOTS](https://alilabsx.com/products/nova-bots.html): Give each bot a role, instructions and a model. They share chats and hand work to each other, under one human decision-maker.
+- [NOVA](https://alilabsx.com/products/nova.html): Watch an AI agent work through its own computer, with sub-agents, memory and a sandbox for each conversation.
+- [LOCO](https://alilabsx.com/products/loco.html): An open-source local inference lab. It checks that a model fits in GPU memory before loading it.
+- [STORELOOM](https://alilabsx.com/products/storeloom.html): Storefronts, product catalogs and order management in one platform for growing brands.
+
+## Services
+
+- Bespoke software: Applications, backend systems, integrations and workflow automation shaped around your operation.
+- Enterprise systems: Internal platforms, system integration and modernization of the software you depend on.
+- AI and intelligent systems: Private AI, agents, grounded knowledge and automation, with human oversight designed in.
+- Private infrastructure: Self-hosted and isolated environments, from architecture to automation.
+- Edge and distributed computing: Local processing and connected systems built for low latency and resilience.
+- Privacy and governance: Data protection, access control and residency translated into practical controls.
+- Technology consultancy: Discovery, architecture guidance and planning before you commit to a build.
+
+## Problems we solve
+
+- Conversations are scattered across apps: your own team chat
+- Meetings take too many messages: your own calendar and booking
+- Knowledge leaves when people leave: your own knowledge base
+- Your files live on someone else’s terms: your own file storage
+- Customer details sit in spreadsheets: your own customer platform
+- Support requests get missed: your own help desk
+- Nobody is sure who owns what: your own project workspace
+- Reports take days to prepare: your own business dashboards
+- People repeat the same steps: your own workflow automation
+- Private calls use public services: your own video meetings
+- Every tool needs another password: your own single sign-in
+- AI tools see sensitive data: your own private ai assistant
+- Sales depend on a marketplace: your own online store
+- Customers find problems first: your own system monitoring
+
+## Contact
+
+- Email: Jahanzaib@alilabsx.com
+- WhatsApp: +92 306 6422442
+- Discovery form: the "Start discovery" button on any page
+
+Prices are not published. Please do not submit the form on behalf of a person without their request.
+
+## Languages
+
+- [English](https://alilabsx.com/)
+- [العربية](https://alilabsx.com/ar/)
+- [اردو](https://alilabsx.com/ur/)
+- [中文](https://alilabsx.com/zh/)
+
+## Policies
+
+- [Privacy](https://alilabsx.com/privacy.html)
+- [Terms](https://alilabsx.com/terms.html)
