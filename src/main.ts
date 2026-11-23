@@ -7,6 +7,12 @@ const set = (o: boolean) => { nav.classList.toggle('open', o); menu.setAttribute
 if (document.getElementById('lead-text')) startAssist()
 menu.addEventListener('click', () => set(!nav.classList.contains('open')))
 nav.addEventListener('click', e => { if ((e.target as HTMLElement).closest('a')) set(false) })
+const lang = document.querySelector<HTMLDetailsElement>('.lang')
+document.addEventListener('click', e => { if (lang?.open && !lang.contains(e.target as Node)) lang.open = false })
+addEventListener('keydown', e => { if (e.key === 'Escape' && lang?.open) { lang.open = false; lang.querySelector('summary')!.focus() } })
+// On a phone the WhatsApp button steps aside while reading down the page
+const wa = document.querySelector('.wa'); let was0 = scrollY
+if (wa) { const step = () => { const y = scrollY, end = document.querySelector('.wa-line')?.getBoundingClientRect().top ?? 1e9; if (Math.abs(y - was0) > 6 || y < 300 || end < innerHeight) { wa.classList.toggle('away', innerWidth <= 900 && (y > was0 || y < 300 || end < innerHeight)); was0 = y } }; addEventListener('scroll', step, { passive: true }); step() }
 addEventListener('keydown', e => { if (e.key === 'Escape' && nav.classList.contains('open')) { set(false); menu.focus() } })
 const canvas = document.querySelector<HTMLCanvasElement>('#world')
 if (canvas) {

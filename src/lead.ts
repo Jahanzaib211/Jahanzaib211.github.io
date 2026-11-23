@@ -55,6 +55,7 @@ function make() {
     else if (i.type === 'radio' && pointer) { const all = [...box!.querySelectorAll<HTMLElement>(`fieldset[data-step="${step}"] [data-need]`)], n = all[all.indexOf(need!) + 1]; if (n) n.scrollIntoView({ block: 'nearest', behavior: matchMedia('(prefers-reduced-motion:reduce)').matches ? 'auto' : 'smooth' }) }
   })
   f.addEventListener('input', e => { (e.target as HTMLElement).closest('[data-need]')?.classList.remove('bad'); summary() })
+  for (const n of ['input', 'change']) f.addEventListener(n, e => (e.target as HTMLElement).closest('[data-need]')?.querySelectorAll('[aria-invalid]').forEach(x => x.removeAttribute('aria-invalid')))
   f.addEventListener('focusout', e => { const i = e.target as HTMLInputElement; if (i.name === 'email' && i.value && !mailOk(i.value)) { i.closest('[data-need]')!.classList.add('bad'); box!.querySelector('.err')!.textContent = L.mailErr } })
   box.addEventListener('close', () => { document.documentElement.style.overflow = ''; from?.focus(); if (!box!.querySelector('.lead-done') && far > 0) toast({ text: L.tKeep, action: { label: L.next, run: () => { void openLead(ctx, null, from!, true) } }, ms: 6500 }) })
   f.addEventListener('submit', e => { e.preventDefault(); advance() })
@@ -84,9 +85,9 @@ function check() {
   const d = data(), err = box!.querySelector('.err')!; let first: HTMLElement | null = null, msg = ''
   for (const el of box!.querySelectorAll<HTMLElement>(`fieldset[data-step="${step}"] [data-need]`)) {
     const n = el.dataset.need!, v = String(d.get(n) ?? '').trim(), mail = n === 'email' && !!v && !mailOk(v), bad = !v || mail || (n === 'story' && v.length < 12)
-    el.classList.toggle('bad', bad); if (bad && !first) { first = el; msg = mail ? L.mailErr : L.need }
+    el.classList.toggle('bad', bad); el.querySelectorAll('input,textarea').forEach(x => x.setAttribute('aria-invalid', String(bad))); if (bad && !first) { first = el; msg = mail ? L.mailErr : L.need }
   }
-  err.textContent = msg; if (first) { (first.querySelector<HTMLElement>('input,textarea'))!.focus({ preventScroll: true }); first.scrollIntoView({ block: 'center' }) }
+  err.textContent = msg; if (first) { (first.querySelector<HTMLElement>('input,textarea'))!.focus({ preventScroll: true }); first.scrollIntoView({ block: 'nearest' }) }
   return !first
 }
 function brief(d: FormData) {

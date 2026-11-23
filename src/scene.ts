@@ -64,10 +64,10 @@ export function createWorld(canvas: HTMLCanvasElement, reduced: boolean): World 
   addEventListener('resize', size); addEventListener('scroll', locate, { passive: true })
   if (!reduced && matchMedia('(pointer:fine)').matches) addEventListener('pointermove', e => { mx = e.clientX / innerWidth - 0.5; my = e.clientY / innerHeight - 0.5 }, { passive: true })
 
-  let last = performance.now(), run = true
+  let last = performance.now(), run = true, raf = 0
   function frame(now: number) {
     if (!run) return
-    requestAnimationFrame(frame)
+    raf = requestAnimationFrame(frame)
     const dt = Math.min((now - last) / 1000, 0.05); last = now
     if (reduced && !dirty) return
     const k1 = reduced ? 1 : 1 - Math.exp(-dt * 4), vh = innerHeight, unit = (2 * Math.tan((cam.fov * Math.PI) / 360) * cam.position.z) / vh
@@ -77,7 +77,8 @@ export function createWorld(canvas: HTMLCanvasElement, reduced: boolean): World 
     const placed = new Map<string, { y: number; side: number; on: boolean }>(); let logo: { y: number; x: number; s: number; on: boolean } | null = null
     for (const s of sections) {
       const box = s.el.getBoundingClientRect()
-      if (box.bottom < -vh || box.top > vh * 2) continue
+      const reach = wide ? Math.max(box.bottom, s.text.getBoundingClientRect().bottom) : box.bottom
+      if (reach < -vh || box.top > vh * 2) continue
       if (s.form === 'logo') {
         const first = s === sections[0]
         if (first) { const at0 = box.top + scrollY, y = wide ? (vh / 2 - (box.top + box.height / 2)) * unit : (2.2 / unit + (at0 - box.top)) * unit, on = box.bottom > vh * 0.12; if (on || !logo) logo = { y, x: wide ? s.side * 2.55 * Math.min(cam.aspect / 1.7, 1.1) : 0, s: wide ? 0.62 * fit : 0.56, on } }
@@ -86,7 +87,7 @@ export function createWorld(canvas: HTMLCanvasElement, reduced: boolean): World 
       }
       const name = s === cur && override ? override : (s.el.dataset.active ?? s.form); let c: number
       const pin = s.el.querySelector<HTMLElement>('[data-pin]')
-      if (wide && pin) { const q = pin.getBoundingClientRect(), want = (q.top + q.bottom) / 2 - box.top; hold += (want - (hold || want)) * k1; if (!hold) hold = want; c = box.top + hold; c = Math.min(Math.max(c, Math.min(vh * 0.4, box.top + box.height)), Math.max(vh * 0.62, box.top)) }
+      if (wide && pin) { const q = pin.getBoundingClientRect(), want = (q.top + q.bottom) / 2 - box.top; hold += (want - (hold || want)) * k1; if (!hold) hold = want; c = box.top + hold; c = Math.min(Math.max(c, Math.min(vh * 0.4, box.top + box.height)), Math.max(vh * 0.62, box.top + vh * 0.3)) }
       else if (wide) { const q = s.text.getBoundingClientRect(), half = Math.min(q.height / 2, vh * 0.36); c = Math.min(Math.max(vh / 2, q.top + half), q.bottom - half) }
       else c = box.top + Math.min(vh * 0.3, 270) + (s.el.classList.contains('story-top') ? 0 : 30)
       placed.set(name, { y: (vh / 2 - c) * unit, side: s.side, on: c > -vh * 0.2 && c < vh * 1.12 }); if (Math.abs(c - vh / 2) < vh * 1.4) get(name)
@@ -120,14 +121,14 @@ export function createWorld(canvas: HTMLCanvasElement, reduced: boolean): World 
     spark.intensity = flash.v * 70
     r.render(scene, cam); dirty = false
   }
-  size(); requestAnimationFrame(frame)
+  size(); raf = requestAnimationFrame(frame)
   // Build the remaining models while the visitor reads, one per idle moment
   const queue = [...new Set(sections.map(s => s.form))].concat(home ? ['cloud', 'airgap'] : []).filter(n => n !== 'logo')
   const later = (f: () => void) => ('requestIdleCallback' in window ? requestIdleCallback(f, { timeout: 2500 }) : setTimeout(f, 400))
   const prepare = () => { const n = queue.shift(); if (!n) return; const e = get(n); if (e) r.compile(e.m.root, cam, scene); later(prepare) }
   setTimeout(() => later(prepare), reduced ? 300 : 2400)
   if (!reduced) gsap.to(intro, { t: 1, duration: 2.2, ease: 'power2.out', delay: 0.15 })
-  document.addEventListener('visibilitychange', () => { run = !document.hidden; if (run) { last = performance.now(); requestAnimationFrame(frame) } })
+  document.addEventListener('visibilitychange', () => { run = !document.hidden; cancelAnimationFrame(raf); if (run) { last = performance.now(); raf = requestAnimationFrame(frame) } })
   canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); run = false; document.documentElement.classList.add('no3d') })
   const fl = (c: number) => { spark.color.set(c); flash.v = 1; gsap.to(flash, { v: 0, duration: 1.1, ease: 'power2.out' }); boost = reduced ? 0 : 1; dirty = true }
   return { setForm(n) { override = n; target = n; canvas.dataset.form = n; dirty = true }, pulse() { fl(0x04d8fa) }, gate(ok) { fl(ok ? 0x22e59a : 0xff4d5e); get('loco')!.m.act?.(ok) }, act(n, v) { get(n)?.m.act?.(v); dirty = true } }
