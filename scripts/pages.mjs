@@ -1,5 +1,9 @@
 // Builds every page in every language from content/*.mjs
 import { writeFileSync, mkdirSync, readFileSync } from 'node:fs'
+import SOL, { SLUGS, UI } from '../content/solutions.mjs'
+import INS from '../content/insights.mjs'
+import { execSync } from 'node:child_process'
+import { existsSync } from 'node:fs'
 const L = ['en', 'ar', 'ur', 'zh'], T = {}
 for (const l of L) T[l] = (await import(`../content/${l}.mjs`)).default
 const P = ['nova-bots', 'nova', 'loco', 'storeloom'], N = { 'nova-bots': 'NOVA BOTS', nova: 'NOVA', loco: 'LOCO', storeloom: 'STORELOOM' }
@@ -8,8 +12,8 @@ const root = l => (l === 'en' ? '/' : `/${l}/`), H = 'https://alilabsx.com', mai
 const esc = s => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')
 const ORG = { '@type': 'Organization', '@id': H + '/#org', name: 'ALI LABS X', legalName: 'ALI LABS X (PRIVATE) LIMITED', url: H + '/', logo: H + '/brand/alx-mark.svg', email: 'Jahanzaib@alilabsx.com', telephone: '+923066422442', contactPoint: { '@type': 'ContactPoint', contactType: 'sales', telephone: '+923066422442', email: 'Jahanzaib@alilabsx.com', availableLanguage: ['en', 'ar', 'ur', 'zh'] }, sameAs: ['https://github.com/Ali-Labs-X'], foundingDate: '2026-11-18', founder: { '@type': 'Person', name: 'Jahanzaib Ali Ashraf', jobTitle: 'Founder and CEO', sameAs: ['https://www.linkedin.com/in/jahanzaib-ali-labsx', 'https://github.com/Jahanzaib211'] }, address: { '@type': 'PostalAddress', addressLocality: 'Lahore', addressRegion: 'Punjab', addressCountry: 'PK' } }
 const ORGS = { en: 'Home', ar: 'الرئيسية', ur: 'صفحہ اول', zh: '首页' }
-const graph = (l, url, title, desc, crumbs) => JSON.stringify({ '@context': 'https://schema.org', '@graph': [ORG, { '@type': 'WebSite', '@id': H + '/#site', url: H + '/', name: 'ALI LABS X', publisher: { '@id': H + '/#org' }, inLanguage: ['en', 'ar', 'ur', 'zh-Hans'] }, { '@type': 'WebPage', '@id': url, url, name: title, description: desc, inLanguage: l === 'zh' ? 'zh-Hans' : l, isPartOf: { '@id': H + '/#site' }, about: { '@id': H + '/#org' } }, ...(crumbs.length > 1 ? [{ '@type': 'BreadcrumbList', itemListElement: crumbs.map(([name, item], i) => ({ '@type': 'ListItem', position: i + 1, name, item })) }] : [])] }).replace(/</g, '\\u003c')
-function page(l, path, title, desc, main, { alt = true, home = false, d3 = false, noindex = false, here = '' } = {}) {
+const graph = (l, url, title, desc, crumbs, extra) => JSON.stringify({ '@context': 'https://schema.org', '@graph': [ORG, { '@type': 'WebSite', '@id': H + '/#site', url: H + '/', name: 'ALI LABS X', publisher: { '@id': H + '/#org' }, inLanguage: ['en', 'ar', 'ur', 'zh-Hans'] }, { '@type': 'WebPage', '@id': url, url, name: title, description: desc, inLanguage: l === 'zh' ? 'zh-Hans' : l, isPartOf: { '@id': H + '/#site' }, about: { '@id': H + '/#org' } }, ...extra, ...(crumbs.length > 1 ? [{ '@type': 'BreadcrumbList', itemListElement: crumbs.map(([name, item], i) => ({ '@type': 'ListItem', position: i + 1, name, item })) }] : [])] }).replace(/</g, '\\u003c')
+function page(l, path, title, desc, main, { alt = true, extra = [], crumb = [], img = '', home = false, d3 = false, noindex = false, here = '' } = {}) {
   const t = T[l], r = root(l), url = H + r + path, other = x => root(x) + (alt ? path : '')
   return `<!doctype html>
 <html lang="${l === 'zh' ? 'zh-Hans' : l}" dir="${t.dir}">
@@ -20,8 +24,10 @@ function page(l, path, title, desc, main, { alt = true, home = false, d3 = false
 <meta name="description" content="${esc(desc)}">
 ${noindex ? '<meta name="robots" content="noindex">' : `<link rel="canonical" href="${url}">`}
 ${alt && !noindex ? L.map(x => `<link rel="alternate" hreflang="${x === 'zh' ? 'zh-Hans' : x}" href="${H}${other(x)}">`).join('\n') + `\n<link rel="alternate" hreflang="x-default" href="${H}${other('en')}">` : ''}
+<link rel="alternate" type="application/rss+xml" title="ALI LABS X Insights" href="/feed.xml">
 <meta name="theme-color" content="#050a16">
 <link rel="icon" type="image/svg+xml" href="/brand/alx-icon.svg">
+<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon.png">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="ALI LABS X">
@@ -29,11 +35,11 @@ ${alt && !noindex ? L.map(x => `<link rel="alternate" hreflang="${x === 'zh' ? '
 <meta property="og:description" content="${esc(desc)}">
 <meta property="og:url" content="${url}">
 <meta property="og:locale" content="${{ en: 'en_US', ar: 'ar_AR', ur: 'ur_PK', zh: 'zh_CN' }[l]}">
-<meta property="og:image" content="${H}/og-image.png">
+<meta property="og:image" content="${H}/${img && existsSync(`public/og/${img}`) ? `og/${img}` : 'og-image.png'}">
 <meta property="og:image:alt" content="ALI LABS X">
 <link rel="manifest" href="/site.webmanifest">
 <meta name="twitter:card" content="summary_large_image">
-${noindex ? '' : `<script type="application/json" id="lead-text">${JSON.stringify({ ...Object.fromEntries(Object.entries(t.lead).filter(([k, v]) => typeof v === 'string' || ['tips', 'more', 'nextP'].includes(k))), name: t.name }).replace(/</g, '\\u003c')}</script>\n`}${noindex ? '' : `<script type="application/ld+json">${graph(l, url, title, desc, [[ORGS[l], H + r], ...(path.startsWith('products/') && path !== 'products/' ? [[t.nav[2], H + r + 'products/']] : []), ...(path ? [[title, url]] : [])])}</script>\n`}${d3 ? `<script type="application/json" id="i18n">${JSON.stringify({ js: t.js, inf: t.inf, ask: t.solAsk }).replace(/</g, '\\u003c')}</script>\n` : ''}${[l === 'zh' ? 'alx-chinese' : 0, t.dir === 'rtl' ? 'alexandria-arabic' : 0, 'alexandria-latin'].filter(Boolean).map(f => `<link rel="preload" href="/assets/fonts/${f}.woff2" as="font" type="font/woff2" crossorigin>`).join('\n')}
+${noindex ? '' : `<script type="application/json" id="lead-text">${JSON.stringify({ ...Object.fromEntries(Object.entries(t.lead).filter(([k, v]) => typeof v === 'string' || ['tips', 'more', 'nextP'].includes(k))), name: t.name }).replace(/</g, '\\u003c')}</script>\n`}${noindex ? '' : `<script type="application/ld+json">${graph(l, url, title, desc, [[ORGS[l], H + r], ...(path.startsWith('products/') && path !== 'products/' ? [[t.nav[2], H + r + 'products/']] : []), ...crumb, ...(path ? [[title, url]] : [])], extra)}</script>\n`}${d3 ? `<script type="application/json" id="i18n">${JSON.stringify({ js: t.js, inf: t.inf, ask: t.solAsk }).replace(/</g, '\\u003c')}</script>\n` : ''}${[l === 'zh' ? 'alx-chinese' : 0, t.dir === 'rtl' ? 'alexandria-arabic' : 0, 'alexandria-latin'].filter(Boolean).map(f => `<link rel="preload" href="/assets/fonts/${f}.woff2" as="font" type="font/woff2" crossorigin>`).join('\n')}
 <link rel="stylesheet" href="/src/style.css">
 <script type="module" src="/src/main.ts"></script>
 </head>
@@ -42,11 +48,11 @@ ${noindex ? '' : `<script type="application/json" id="lead-text">${JSON.stringif
 <header><div class="wrap">
 <a class="logo" href="${r}"><img src="/brand/alx-mark.svg" alt="" width="62" height="28"><span dir="ltr">ALI LABS X<small>(PRIVATE) LIMITED</small></span></a>
 <button class="menu" aria-expanded="false" aria-controls="nav" data-open="${t.menu}" data-close="${t.close}">${t.menu}</button>
-<nav id="nav" aria-label="${t.menu}">${['solutions', 'services', 'products', 'approach', 'company'].map((k, i) => `<a href="${r}${k}/"${here === k ? ' aria-current="page"' : ''}>${t.nav[i]}</a>`).join('')}<details class="lang"><summary aria-label="${t.lang}">${t.name}</summary><div>${L.map(x => `<a href="${other(x)}" lang="${x}" dir="${T[x].dir}"${x === l ? ' aria-current="true"' : ''}>${T[x].name}</a>`).join('')}</div></details><a class="btn" href="${mail('Project enquiry')}" data-lead="">${t.contact}</a></nav>
+<nav id="nav" aria-label="${t.menu}">${['solutions', 'services', 'products', 'approach', 'company'].map((k, i) => `<a href="${r}${k}/"${here === k ? ' aria-current="page"' : ''}>${t.nav[i]}</a>`).join('')}${l === 'en' ? `<a href="/insights/"${here === 'insights' ? ' aria-current="page"' : ''}>Insights</a>` : ''}<details class="lang"><summary aria-label="${t.lang}">${t.name}</summary><div>${L.map(x => `<a href="${other(x)}" lang="${x}" dir="${T[x].dir}"${x === l ? ' aria-current="true"' : ''}>${T[x].name}</a>`).join('')}</div></details><a class="btn" href="${mail('Project enquiry')}" data-lead="">${t.contact}</a></nav>
 </div></header>
 ${main}
-<footer><div class="wrap"><div><span dir="ltr">&copy; 2026 ALI LABS X (PRIVATE) LIMITED</span><br>${t.ft}</div>
-<nav aria-label="${t.nav[4]}"><a href="/privacy.html" lang="en">${t.priv}</a><a href="/terms.html" lang="en">${t.terms}</a><a href="https://github.com/Ali-Labs-X">GitHub</a><a href="https://www.linkedin.com/in/jahanzaib-ali-labsx">LinkedIn</a></nav></div></footer>
+<footer>${noindex ? '' : `<div class="wrap f-map"><nav aria-label="${t.nav[0]}"><b>${t.nav[0]}</b>${t.sol.map((x, i) => `<a href="${r}solutions/${SLUGS[i]}/">${x[1]}</a>`).join('')}</nav><nav aria-label="${t.nav[2]}"><b>${t.nav[2]}</b>${P.map(k => `<a dir="ltr" href="${r}products/${k}.html">${N[k]}</a>`).join('')}<b>${t.nav[4]}</b><a href="${r}company/">${t.founder.th}</a>${['enterprise', 'careers', 'contact'].map((k, i) => `<a href="/${k}/">${t.foot[i]}</a>`).join('')}<a href="/insights/">${UI[l].ins}</a></nav></div>`}<div class="wrap"><div><span dir="ltr">&copy; 2026 ALI LABS X (PRIVATE) LIMITED</span><br>${t.ft}</div>
+<nav aria-label="${t.foot[5]}"><a href="/privacy.html">${t.priv}</a><a href="/terms.html">${t.terms}</a><a href="/cookies/">${t.foot[4]}</a><a href="/security/">${t.foot[3]}</a><a href="https://github.com/Ali-Labs-X">GitHub</a><a href="https://www.linkedin.com/in/jahanzaib-ali-labsx">LinkedIn</a></nav></div></footer>
 ${noindex ? '' : `<a class="wa" href="${WA(t)}" target="_blank" rel="noopener" aria-label="${t.wa}">${WI}</a>`}
 </body>
 </html>
@@ -70,18 +76,19 @@ for (const l of L) {
   const fo = t.founder, ORDER = ['nova-bots', 'nova', 'loco', 'storeloom']
   const open = '<canvas id="world" aria-hidden="true"></canvas>\n<main id="main">\n'
   const close = scene('contact', 'logo', 0, `<h2>${t.enH}</h2><p class="lead">${t.enP}</p><div class="row mid"><a class="btn" href="${mail('Project enquiry')}" data-lead="">${t.lead.open}</a><a class="link" dir="ltr" href="mailto:Jahanzaib@alilabsx.com">Jahanzaib@alilabsx.com</a></div><a class="wa-line" href="${WA(t)}" target="_blank" rel="noopener">${WI}<span>${t.wa}</span><b dir="ltr">+92 306 6422442</b></a>`, 'end') + '</main>'
-  const put = (k, title, desc, m) => { mkdirSync(`${dir}${k}`, { recursive: true }); writeFileSync(`${dir}${k}/index.html`, page(l, `${k}/`, `${title}, ALI LABS X`, desc, open + m + close, { d3: true, here: k })) }
+  const at5 = ['solutions', 'services', 'products', 'approach', 'company']
+  const put = (k, title, desc, m, extra = []) => { mkdirSync(`${dir}${k}`, { recursive: true }); writeFileSync(`${dir}${k}/index.html`, page(l, `${k}/`, t.seo.ti[at5.indexOf(k) + 1], desc, open + m + close, { d3: true, here: k, img: `${l}-${k}.jpg`, extra })) }
   const two = `<section class="light solid"><div class="wrap two">${t.two.map(x => `<div><h2>${x[0]}</h2><p>${x[1]}</p></div>`).join('')}</div></section>\n`
   const hero = (form, h, d, go, label) => `<section class="hero" data-form="${form}" data-side="1"><div class="wrap"><div class="h-text"><h1>${h}</h1><p>${d}</p><div class="row"><a class="btn" href="${mail('Project enquiry')}" data-lead="">${t.start}</a><a class="link" href="${go}">${label}</a></div></div></div></section>\n`
   // Home
   let m = `<section class="hero" data-form="logo" data-side="1"><div class="wrap"><img class="flat" src="/brand/alx-mark.svg" alt="" width="1452" height="665"><h1>${t.h1}</h1><p>${t.hero}</p><div class="row"><a class="btn" href="${mail('Project enquiry')}" data-lead="">${t.start}</a><a class="link" href="${r}solutions/">${t.disc}</a></div></div></section>\n`
   t.story.forEach((s, i) => { m += scene('', ['build', 'own', 'innovate'][i], i === 1 ? -1 : 1, `<div class="say-big"><h2>${s[0]}</h2><p>${s[1]}</p></div>`) })
   m += `<section class="dark solid ways"><div class="wrap"><ul>${[['solutions', t.solP], ['services', t.two[1][1]], ['products', t.prP], ['approach', t.apH], ['company', fo.ch]].map(([k, d], i) => `<li><a href="${r}${k}/"><b>${t.nav[['solutions', 'services', 'products', 'approach', 'company'].indexOf(k)]}</b><span>${d}</span></a></li>`).join('')}</ul></div></section>\n`
-  writeFileSync(dir + 'index.html', page(l, '', t.title, t.desc, open + m + close, { home: true, d3: true }))
+  writeFileSync(dir + 'index.html', page(l, '', t.seo.ti[0], t.desc, open + m + close, { home: true, d3: true, img: `${l}-home.jpg` }))
   // Solutions
-  put('solutions', t.nav[0], t.solP, hero('onprem', t.solH, t.two[0][1], '#solutions', t.more) + scene('solutions', 'desk', 1.3, `<div class="panel wide"><h2>${t.solP}</h2><fieldset class="sols"><legend class="vh">${t.nav[0]}</legend>${t.sol.map((s, i) => `<label class="sol"${i ? '' : ' data-pin'}><input type="radio" name="sol" value="${i}" data-m="${mail(T.en.sol[i][1])}"${i ? '' : ' checked'}><span><svg viewBox="0 0 32 32" aria-hidden="true">${ICON[i]}</svg><em>${s[0]}</em><b>${s[1]}</b></span></label>`).join('')}</fieldset><div class="sol-go"><a id="sol-ask" class="btn" data-lead="sol" href="${mail(T.en.sol[0][1])}">${t.solAsk}</a></div></div>`) + two)
+  put('solutions', t.nav[0], t.seo.de[0], hero('onprem', t.solH, t.two[0][1], '#solutions', t.more) + scene('solutions', 'desk', 1.3, `<div class="panel wide"><h2>${t.solP}</h2><fieldset class="sols"><legend class="vh">${t.nav[0]}</legend>${t.sol.map((s, i) => `<label class="sol"${i ? '' : ' data-pin'}><input type="radio" name="sol" value="${i}" data-m="${mail(T.en.sol[i][1])}" data-u="${r}solutions/${SLUGS[i]}/"${i ? '' : ' checked'}><span><svg viewBox="0 0 32 32" aria-hidden="true">${ICON[i]}</svg><em>${s[0]}</em><b>${s[1]}</b></span></label>`).join('')}</fieldset><div class="sol-go"><a id="sol-read" class="link" href="${r}solutions/${SLUGS[0]}/">${UI[l].read}</a><a id="sol-ask" class="btn" data-lead="sol" href="${mail(T.en.sol[0][1])}">${t.solAsk}</a></div></div>`) + two)
   // Services
-  put('services', t.nav[1], t.two[1][1], hero('innovate', t.svcH, t.coP, '#services', t.more) + `<section id="services" class="dark solid"><div class="wrap"><div class="services">${t.svc.map(x => `<div><h3>${x[0]}</h3><p>${x[1]}</p></div>`).join('')}</div></div></section>\n` + two)
+  put('services', t.nav[1], t.seo.de[1], hero('innovate', t.seo.sv, t.coP, '#services', t.more) + `<section id="services" class="dark solid"><div class="wrap"><div class="services">${t.svc.map(x => `<div><h3>${x[0]}</h3><p>${x[1]}</p></div>`).join('')}</div></div></section>\n` + two, t.svc.map(x => ({ '@type': 'Service', name: x[0], description: x[1], provider: { '@id': H + '/#org' } })))
   // Products
   put('products', t.nav[2], t.prP, hero('marks', t.prH, t.prP, '#nova-bots', t.more) + P.map((k, i) => scene(k, ['bots', 'nova', 'loco', 'storeloom'][i], i % 2 ? 1 : -1, `<div class="panel"><h2 class="p-name"><img src="/brand/${k}-mark.svg" alt="" width="54" height="54"><span dir="ltr">${N[k]}</span></h2><p>${t.p[k]}</p>${demo(k, t)}<div class="row"><a class="btn" href="${mail(N[k] + ' private demo request')}" data-lead="${N[k]} private demo">${t.demo}</a><a class="link" href="${r}products/${k}.html">${t.tale}</a></div></div>`)).join(''))
   // Approach
@@ -95,14 +102,49 @@ for (const l of L) {
 <section class="story-top" data-form="${['bots', 'nova', 'loco', 'storeloom'][i]}" data-side="1"><img src="/brand/${k}-mark.svg" alt="" width="256" height="256"><h1 dir="ltr">${N[k]}</h1><p>${s[0]}</p></section>
 ${[0, 1, 2].map(n => `<section class="chapter" data-ch="${n}"><h2>${t.ch[n]}</h2><p>${s[n + 1]}</p></section>`).join('\n')}
 <section class="chapter" data-ch="3"><h2>${t.ch[3]}</h2><ul>${s[4].map(x => `<li>${x}</li>`).join('')}</ul>${CODE[k] ? `<p><a class="link" href="${CODE[k]}">${t.src}</a></p>` : ''}</section>
-<div class="next"><a class="btn" href="${mail(N[k] + ' private demo request')}" data-lead="${N[k]} private demo">${t.demo}</a><a class="link" href="${r}products/${nx}.html">${t.next.replace('{n}', N[nx])}</a></div></div></article></main>`, { d3: true, here: 'products' }))
+<div class="next"><a class="btn" href="${mail(N[k] + ' private demo request')}" data-lead="${N[k]} private demo">${t.demo}</a><a class="link" href="${r}products/${nx}.html">${t.next.replace('{n}', N[nx])}</a></div></div></article></main>`, { d3: true, here: 'products', img: `${l}-${k}.jpg`, extra: CODE[k] ? [{ '@type': 'SoftwareSourceCode', name: N[k], description: t.p[k], codeRepository: CODE[k], author: { '@id': H + '/#org' } }] : [] }))
+  })
+  // One page for each problem
+  SLUGS.forEach((k, i) => {
+    const s = SOL[l][i], u = UI[l], path = `solutions/${k}/`, rel = [1, 5, 9].map(n => (i + n) % 14)
+    mkdirSync(dir + path, { recursive: true })
+    writeFileSync(`${dir}${path}index.html`, page(l, path, `${s[0]}${l === 'zh' ? '，' : l === 'en' ? ', ' : '، '}ALI LABS X`, `${s[0]}${t.dir === 'rtl' && l === 'ur' ? '۔' : l === 'zh' ? '。' : '.'} ${s[3]}`, `<canvas id="world" aria-hidden="true"></canvas>
+<main id="main"><article class="wrap story-page" data-product="desk" data-screen="${i}"><div class="story-col">
+<section class="story-top sol-top" data-form="desk" data-side="1"><p class="back"><a href="${r}solutions/">${t.nav[0]}</a></p><h1>${s[0]}</h1><p>${t.sol[i][0]}${l === 'zh' || l === 'ur' ? '。'.replace('。', l === 'ur' ? '۔' : '。') : '.'}</p><div class="row"><a class="btn" href="${mail(T.en.sol[i][1])}" data-lead="sol" data-sol="${i}">${t.solAsk}</a></div></section>
+<section class="chapter" data-ch="0"><h2>${u.h[0]}</h2><p>${s[1]}</p></section>
+<section class="chapter" data-ch="1"><h2>${u.h[1]}</h2><ul>${s[2].map(x => `<li>${x}</li>`).join('')}</ul></section>
+<section class="chapter" data-ch="2"><h2>${u.h[2]}</h2><p>${s[3]}</p></section>
+<section class="chapter" data-ch="3"><h2>${u.h[3]}</h2>${['cloud', 'onprem', 'airgap'].map(x => `<h3>${t.inf[x][0]}</h3><p>${t.inf[x][1]}</p>`).join('')}</section>
+<section class="chapter" data-ch="4"><h2>${u.rel}</h2><ul class="rel">${rel.map(n => `<li><a href="${r}solutions/${SLUGS[n]}/">${t.sol[n][0]}</a></li>`).join('')}</ul></section>
+<div class="next"><a class="btn" href="${mail(T.en.sol[i][1])}" data-lead="sol" data-sol="${i}">${t.solAsk}</a><a class="link" href="${WA(t)}" target="_blank" rel="noopener">${t.wa}</a></div></div></article></main>`, { d3: true, here: 'solutions', img: `${l}-${k}.jpg`, crumb: [[t.nav[0], H + r + 'solutions/']], extra: [{ '@type': 'Service', name: s[0], description: s[3], serviceType: t.sol[i][1], provider: { '@id': H + '/#org' } }] }))
   })
 }
+// Company pages, English only
+const INFO = { enterprise: ['Enterprise software partner, agreements and security, ALI LABS X', 'How ALI LABS X works with enterprise teams, including agreements, security review, deployment choices and supplier details.'], careers: ['Careers at ALI LABS X', 'Open roles at ALI LABS X and how to introduce yourself to the engineering team.'], contact: ['Contact ALI LABS X', 'Reach ALI LABS X by discovery form, WhatsApp or email to discuss software, private AI and infrastructure.'], security: ['Security at ALI LABS X', 'How this website and your enquiry are protected, and how to report a security concern to ALI LABS X.'], cookies: ['Cookies, ALI LABS X', 'This website sets no cookies. See what is kept in your browser and which services deliver the site.'] }
+for (const k in INFO) { mkdirSync(k, { recursive: true }); writeFileSync(`${k}/index.html`, page('en', `${k}/`, ...INFO[k], `<main id="main">${readFileSync(`content/${k}.part.html`, 'utf8')}</main>`, { alt: false })) }
+// Articles, English only
+const body = b => b.map(([k, v]) => k === 'l' ? `<ul>${v.map(x => `<li>${x}</li>`).join('')}</ul>` : k === 'h' ? `<h2>${v}</h2>` : `<p>${v}</p>`).join('\n'), E0 = T.en
+const long = d => new Date(d + 'T00:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
+const WORK = { loco: ['LOCO', '/products/loco.html'], nova: ['NOVA', '/products/nova.html'], 'nova-bots': ['NOVA BOTS', '/products/nova-bots.html'] }
+const ask = `<aside class="ask"><h2>Working on this now?</h2><p>Tell us what is happening. We read every brief ourselves and reply with questions or a first view.</p><div class="row"><a class="btn" href="${mail('Project enquiry')}" data-lead="Insight">${E0.lead.open}</a><a class="link" href="${WA(E0)}" target="_blank" rel="noopener">${E0.wa}</a></div></aside>`
+mkdirSync('insights', { recursive: true })
+writeFileSync('insights/index.html', page('en', 'insights/', 'Insights on owning software and private AI, ALI LABS X', 'Practical guides on software cost, build or buy, private AI, security, hosting and ownership, written by the engineers at ALI LABS X.', `<main id="main"><div class="wrap insights"><h1>Insights</h1><p class="lead">Practical answers to the questions people ask before they commit to a system.</p><ul class="posts">${INS.map(a => `<li><a href="/insights/${a.slug}/"><h2>${a.title}</h2><p>${a.desc}</p></a></li>`).join('')}</ul></div></main>`, { alt: false, here: 'insights' }))
+INS.forEach((a, i) => {
+  const path = `insights/${a.slug}/`, more = [1, 4, 7].map(n => INS[(i + n) % INS.length]), w = WORK[a.work]
+  mkdirSync(path, { recursive: true })
+  writeFileSync(path + 'index.html', page('en', path, a.title, a.desc, `<main id="main"><article class="wrap post"><p class="back"><a href="/insights/">Insights</a></p><h1>${a.title}</h1><p class="by">ALI LABS X engineering, <time datetime="${a.date}">${long(a.date)}</time></p>
+${body(a.body)}
+${w ? `<p class="from">This comes from our own work on <a href="${w[1]}">${w[0]}</a>.</p>` : ''}
+${ask}
+<nav class="also" aria-label="Related"><h2>Related problems</h2><ul>${a.sol.map(n => `<li><a href="/solutions/${SLUGS[n]}/">${E0.sol[n][0]}</a></li>`).join('')}</ul><h2>Read next</h2><ul>${more.map(x => `<li><a href="/insights/${x.slug}/">${x.title}</a></li>`).join('')}</ul></nav></article></main>`, { alt: false, here: 'insights', img: `en-${a.slug}.jpg`, crumb: [['Insights', H + '/insights/']], extra: [{ '@type': 'BlogPosting', headline: a.title, description: a.desc, datePublished: a.date, dateModified: a.date, inLanguage: 'en', image: `${H}/og/en-${a.slug}.jpg`, author: { '@id': H + '/#org' }, publisher: { '@id': H + '/#org' }, mainEntityOfPage: H + '/' + path }] }))
+})
+writeFileSync('public/feed.xml', `<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0"><channel><title>ALI LABS X Insights</title><link>${H}/insights/</link><description>Guides on owning software and private AI</description><language>en</language>${INS.map(a => `<item><title>${esc(a.title)}</title><link>${H}/insights/${a.slug}/</link><guid>${H}/insights/${a.slug}/</guid><pubDate>${new Date(a.date).toUTCString()}</pubDate><description>${esc(a.desc)}</description></item>`).join('')}</channel></rss>\n`)
 for (const [f, title] of [['privacy', 'Privacy policy'], ['terms', 'Terms of use'], ['404', 'Page not found']])
   writeFileSync(f + '.html', page('en', f + '.html', `${title}, ALI LABS X`, `${title} of ALI LABS X.`, `<main id="main">${readFileSync(`content/${f}.part.html`, 'utf8')}</main>`, { alt: false, noindex: f === '404' }))
-const KEYS = ['', 'solutions/', 'services/', 'products/', 'approach/', 'company/', ...P.map(k => `products/${k}.html`)], DAY = new Date().toISOString().slice(0, 10)
+const KEYS = ['', 'solutions/', 'services/', 'products/', 'approach/', 'company/', ...P.map(k => `products/${k}.html`), ...SLUGS.map(k => `solutions/${k}/`)], DAY = new Date().toISOString().slice(0, 10)
+const last = f => { try { return execSync(`git log -1 --format=%cs -- "${f}"`, { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim() || DAY } catch { return DAY } }, fileOf = u => (u.replace(/^\//, '') + (u.endsWith('/') ? 'index.html' : ''))
 const alts = p => L.map(x => `<xhtml:link rel="alternate" hreflang="${x === 'zh' ? 'zh-Hans' : x}" href="${H}${root(x)}${p}"/>`).join('') + `<xhtml:link rel="alternate" hreflang="x-default" href="${H}/${p}"/>`
-writeFileSync('public/sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${L.flatMap(l => KEYS.map(p => `  <url><loc>${H}${root(l)}${p}</loc><lastmod>${DAY}</lastmod>${alts(p)}</url>`)).concat(['privacy', 'terms'].map(p => `  <url><loc>${H}/${p}.html</loc><lastmod>${DAY}</lastmod></url>`)).join('\n')}\n</urlset>\n`)
+writeFileSync('public/sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${L.flatMap(l => KEYS.map(p => `  <url><loc>${H}${root(l)}${p}</loc><lastmod>${last(fileOf(root(l) + p))}</lastmod>${alts(p)}</url>`)).concat([...Object.keys(INFO).map(k => k + '/'), 'insights/', ...INS.map(a => `insights/${a.slug}/`), 'privacy.html', 'terms.html'].map(p => `  <url><loc>${H}/${p}</loc><lastmod>${last(fileOf('/' + p))}</lastmod></url>`)).join('\n')}\n</urlset>\n`)
 // For AI assistants and other automated readers
 const E = T.en, NAV = ['solutions', 'services', 'products', 'approach', 'company']
 const agents = `# ALI LABS X
@@ -127,7 +169,11 @@ ${E.svc.map(x => `- ${x[0]}: ${x[1]}`).join('\n')}
 
 ## Problems we solve
 
-${E.sol.map(x => `- ${x[0]}: ${x[1].toLowerCase()}`).join('\n')}
+${E.sol.map((x, i) => `- [${x[1]}](${H}/solutions/${SLUGS[i]}/): ${x[0]}`).join('\n')}
+
+## Insights
+
+${INS.map(a => `- [${a.title}](${H}/insights/${a.slug}/): ${a.desc}`).join('\n')}
 
 ## Contact
 

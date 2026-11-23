@@ -33,20 +33,37 @@ Demonstrations are private and by request.
 
 ## Problems we solve
 
-- Conversations are scattered across apps: your own team chat
-- Meetings take too many messages: your own calendar and booking
-- Knowledge leaves when people leave: your own knowledge base
-- Your files live on someone else’s terms: your own file storage
-- Customer details sit in spreadsheets: your own customer platform
-- Support requests get missed: your own help desk
-- Nobody is sure who owns what: your own project workspace
-- Reports take days to prepare: your own business dashboards
-- People repeat the same steps: your own workflow automation
-- Private calls use public services: your own video meetings
-- Every tool needs another password: your own single sign-in
-- AI tools see sensitive data: your own private ai assistant
-- Sales depend on a marketplace: your own online store
-- Customers find problems first: your own system monitoring
+- [Your own team chat](https://alilabsx.com/solutions/team-chat/): Conversations are scattered across apps
+- [Your own calendar and booking](https://alilabsx.com/solutions/calendar-booking/): Meetings take too many messages
+- [Your own knowledge base](https://alilabsx.com/solutions/knowledge-base/): Knowledge leaves when people leave
+- [Your own file storage](https://alilabsx.com/solutions/file-storage/): Your files live on someone else’s terms
+- [Your own customer platform](https://alilabsx.com/solutions/customer-platform/): Customer details sit in spreadsheets
+- [Your own help desk](https://alilabsx.com/solutions/help-desk/): Support requests get missed
+- [Your own project workspace](https://alilabsx.com/solutions/project-workspace/): Nobody is sure who owns what
+- [Your own business dashboards](https://alilabsx.com/solutions/business-dashboards/): Reports take days to prepare
+- [Your own workflow automation](https://alilabsx.com/solutions/workflow-automation/): People repeat the same steps
+- [Your own video meetings](https://alilabsx.com/solutions/video-meetings/): Private calls use public services
+- [Your own single sign-in](https://alilabsx.com/solutions/single-sign-in/): Every tool needs another password
+- [Your own private AI assistant](https://alilabsx.com/solutions/private-ai-assistant/): AI tools see sensitive data
+- [Your own online store](https://alilabsx.com/solutions/online-store/): Sales depend on a marketplace
+- [Your own system monitoring](https://alilabsx.com/solutions/system-monitoring/): Customers find problems first
+
+## Insights
+
+- [What decides the cost of custom software](https://alilabsx.com/insights/custom-software-cost/): Custom software cost depends on scope, integrations, data and risk. See what moves the price, how to set a budget and how to compare quotes fairly.
+- [Build or buy software, a practical way to decide](https://alilabsx.com/insights/build-or-buy-software/): Custom software or off the shelf? Use five questions to decide when to buy, when to build and when to adapt a proven foundation.
+- [On-premises, private cloud or air-gapped](https://alilabsx.com/insights/on-premises-private-cloud-or-air-gapped/): Compare on-premises, private cloud and air-gapped systems by control, cost, updates and staff, and learn how to choose the right one for each workload.
+- [Self-hosted or subscription software](https://alilabsx.com/insights/self-hosted-or-subscription-software/): Self-hosted vs SaaS without the slogans. Compare real costs, security duties and effort, and see when owning your software is worth it.
+- [How to avoid vendor lock-in](https://alilabsx.com/insights/avoid-vendor-lock-in/): Vendor lock-in is the cost of leaving. Learn the four kinds, the contract questions to ask and a simple exit test to run before you sign.
+- [Who owns the source code you paid for](https://alilabsx.com/insights/who-owns-the-source-code/): Paying for software does not always mean you own the code. What to settle in writing before the project starts, and what a real handover contains.
+- [How much GPU memory a private AI model needs](https://alilabsx.com/insights/gpu-memory-for-private-ai/): Estimate the VRAM for running an AI model locally. A simple formula, a worked example, and the mistakes that cause out of memory failures.
+- [When to move from Excel to a CRM](https://alilabsx.com/insights/excel-to-crm/): Seven signs your customer spreadsheet has reached its limit, how to clean the data and a four week plan for moving from Excel to a CRM.
+- [AI agent security for business, what to check first](https://alilabsx.com/insights/ai-agent-security/): AI agents can act, so their mistakes have consequences. A checklist for access, approval, isolation and records before you let one near your systems.
+- [Software requirements document, a one page template](https://alilabsx.com/insights/software-requirements-document/): A short software requirements document template for business owners. Nine questions that help suppliers quote accurately and build the right thing.
+- [How to choose a software company in Pakistan](https://alilabsx.com/insights/choose-a-software-company-in-pakistan/): How to check a software development company in Pakistan before you pay. Registration, real work, ownership, support and a low risk first project.
+- [AI agent sandbox, why each task needs its own computer](https://alilabsx.com/insights/ai-agent-sandbox/): What an AI agent sandbox is, what it protects you from and what it does not. Lessons from NOVA, where each conversation has its own contained computer.
+- [Multi-agent AI, how to make a team of agents dependable](https://alilabsx.com/insights/multi-agent-ai-teams/): Multi-agent AI systems fail when roles are vague. How we designed NOVA BOTS around clear roles, visible handoffs, separate memory and human control.
+- [Arabic and Urdu website development, what usually goes wrong](https://alilabsx.com/insights/arabic-urdu-website-development/): Building a website in Arabic or Urdu is more than translation. Right to left layout, fonts, numbers, search and testing, from building our own site.
 
 ## Contact
 

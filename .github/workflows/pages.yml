@@ -18,6 +18,8 @@ jobs:
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -28,3 +30,8 @@ jobs:
           path: dist
       - id: deploy
         uses: actions/deploy-pages@v4
+      - name: Tell search engines about the new pages
+        continue-on-error: true
+        run: |
+          urls=$(grep -oP '(?<=<loc>)[^<]+' public/sitemap.xml | sed 's/.*/"&"/' | paste -sd,)
+          curl -fsS -X POST https://api.indexnow.org/indexnow -H 'Content-Type: application/json; charset=utf-8' -d "{\"host\":\"alilabsx.com\",\"key\":\"$(cat indexnow.key)\",\"urlList\":[$urls]}"

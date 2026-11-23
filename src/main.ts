@@ -20,7 +20,9 @@ if (canvas) {
   const off = () => root.classList.add('no3d')
   const gl = (() => { try { return !!document.createElement('canvas').getContext('webgl2') } catch { return false } })()
   const start = () => import('./scene').then(m => { attach(m.createWorld(canvas, matchMedia('(prefers-reduced-motion:reduce)').matches)); root.classList.add('ready'); dispatchEvent(new Event('world-ready')) }).catch(off)
-  if (!gl) off(); else if ('requestIdleCallback' in window) requestIdleCallback(start, { timeout: 900 }); else setTimeout(start, 200)
+  // The words come first. The model follows once the page has settled
+  const idle = () => ('requestIdleCallback' in window ? requestIdleCallback(start, { timeout: 1500 }) : setTimeout(start, 200)), go = () => setTimeout(idle, innerWidth < 900 ? 500 : 60)
+  if (!gl) off(); else if (document.readyState === 'complete') go(); else addEventListener('load', go, { once: true })
 }
 
 // Discovery form opens from every call to action; without JavaScript the links still start an email
@@ -28,7 +30,7 @@ document.addEventListener('click', e => {
   const a = (e.target as HTMLElement).closest<HTMLElement>('[data-lead]')
   if (!a || !('showModal' in HTMLDialogElement.prototype)) return
   e.preventDefault()
-  const sol = a.dataset.lead === 'sol' ? Number(document.querySelector<HTMLInputElement>('[name=sol]:checked')?.value ?? 0) : null
+  const sol = a.dataset.lead === 'sol' ? Number(a.dataset.sol ?? document.querySelector<HTMLInputElement>('[name=sol]:checked')?.value ?? 0) : null
   import('./lead').then(m => m.openLead(sol === null ? a.dataset.lead! : 'Solution', sol, a)).catch(() => { location.href = (a as HTMLAnchorElement).href })
 })
 

@@ -1,5 +1,5 @@
 import { defineConfig } from 'vite'
-const tops = ['', 'solutions/', 'services/', 'products/', 'approach/', 'company/'].map(p => p + 'index.html')
-const stories = ['nova-bots', 'nova', 'loco', 'storeloom'].map(p => `products/${p}.html`)
-const input = ['', 'ar/', 'ur/', 'zh/'].flatMap(l => [...tops, ...stories].map(p => l + p)).concat('privacy.html', 'terms.html', '404.html')
+import { globSync } from 'node:fs'
+// Every page that scripts/pages.mjs writes
+const input = globSync('**/*.html', { exclude: f => /^(dist|node_modules|content|public|\.git)/.test(String(f)) }) as string[]
 export default defineConfig({ build: { target: 'es2022', rollupOptions: { input } } })
