@@ -250,7 +250,7 @@ header nav>a:not(.btn){background:linear-gradient(currentColor,currentColor) no-
 @media(max-width:600px) and (max-height:700px) and (orientation:portrait){.hero{padding-top:calc(29svh - 30px)}.hero:has(.h-text){padding-top:min(300px,36svh)}.hero h1,.hero .h-text h1{font-size:34px}.hero p{margin:12px 0 18px;font-size:16px}}
 @media(max-width:600px) and (max-height:700px) and (orientation:portrait){.asking .hero:not(:has(.h-text)){padding-top:232px}}
 @media(max-width:340px){.hero h1,.hero .h-text h1{font-size:30px}}
-@media(min-width:901px) and (max-width:1799px){.hero .h-text h1{max-width:8.6em}:lang(en) .hero .h-text h1{max-width:8.2em}}
+@media(min-width:901px) and (max-width:1799px){:lang(en) .hero[data-form=onprem] .h-text h1{max-width:8.2em}}
 @media(min-width:901px){.scene:not(.end){padding-block:7vh}.hero+.scene .say-big,.scene .say-big{padding-block:0}.scene:has(.say-big){min-height:68vh}}
 .opts small,.blk span button{font-size:14px}.doc[hidden]{display:none}.doc .rel{margin-top:22px}
 /* Without 3D there is no model to rest over, so the page makes room for the choice */

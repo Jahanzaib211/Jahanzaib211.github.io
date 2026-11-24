@@ -40,40 +40,54 @@ function rack(h = 2.1, leds: Mesh[] = []) {
 const floor = (w: number, d: number, y: number) => { const g = grp(at(rb(w, 0.07, d, M.floor, 0.03), 0, y, 0)), l: [number, number, number, number, number, number][] = []; for (let i = 1; i < 6; i++) l.push([-w / 2 + (w * i) / 6, y + 0.037, 0, 0.008, 0.004, d - 0.06], [0, y + 0.037, -d / 2 + (d * i) / 6, w - 0.06, 0.004, 0.008]); g.add(inst(unit, M.steel, l)); return g }
 const blink = (leds: Mesh[]) => (t: number) => leds.forEach((l, i) => { l.visible = Math.sin(t * (2 + (i % 5)) + i * 2.3) > -0.55 })
 
-// Software being made: written lines turn into light, the light becomes the product piece by piece, and each check passes
+// Software being built, as a stack. Servers carry the code, the code carries the product, and light climbs from one to the next
+function slab(w: number, d: number, h: number, r: number, m: Material) {
+  const s = new Shape(), x = w / 2, y = d / 2
+  s.moveTo(-x + r, -y); s.lineTo(x - r, -y); s.absarc(x - r, -y + r, r, -Math.PI / 2, 0, false); s.lineTo(x, y - r); s.absarc(x - r, y - r, r, 0, Math.PI / 2, false); s.lineTo(-x + r, y); s.absarc(-x + r, y - r, r, Math.PI / 2, Math.PI, false); s.lineTo(-x, -y + r); s.absarc(-x + r, -y + r, r, Math.PI, Math.PI * 1.5, false)
+  const g = new ExtrudeGeometry(s, { depth: h, bevelEnabled: true, bevelSize: 0.03, bevelThickness: 0.03, bevelSegments: 4, curveSegments: 14 }); g.rotateX(-Math.PI / 2); g.translate(0, -h / 2, 0); return new Mesh(g, m)
+}
+function rim(w: number, r: number, m: Material, k = 0.018) { const p: Vector3[] = [], x = w / 2 + 0.03; for (const [cx, cz, a0] of [[x - r, x - r, 0], [-x + r, x - r, 1], [-x + r, -x + r, 2], [x - r, -x + r, 3]]) for (let i = 0; i <= 8; i++) { const a = ((a0 + i / 8) * Math.PI) / 2; p.push(new Vector3(cx + Math.cos(a) * r, 0, cz + Math.sin(a) * r)) } return new Mesh(new TubeGeometry(new CatmullRomCurve3(p, true, 'catmullrom', 0.05), 220, k, 8, true), m) }
 function build(): Model {
-  const LINES = [[0, 30, 1], [1, 46, 0], [1, 34, 2], [2, 52, 0], [2, 40, 3], [2, 28, 1], [1, 22, 0], [1, 44, 2], [2, 36, 3], [2, 50, 0], [1, 26, 1], [0, 18, 0]], INK = [UI.dim, UI.c, '#7fb4ff', UI.g], CYCLE = 13, WRITE = 7.5
-  const code = (n: number) => (c: Ctx) => { frame(c, 704, 480); rr(c, 0, 34, 52, 446, '#0a1f48', 0); if (n < LINES.length) rr(c, 52, 52 + n * 34, 652, 34, '#0e2a5e', 0); LINES.forEach(([tab, w, ink], i) => { const y = 62 + i * 34; rr(c, 18, y + 3, 18, 8, i < n ? '#3f6bb5' : '#1c3a75', 4); if (i >= n) return; const x = 78 + tab * 36; rr(c, x, y, w * 3.6, 14, INK[ink], 7); rr(c, x + w * 3.6 + 12, y, 70 + ((i * 47) % 130), 14, '#35589f', 7) }); if (n < LINES.length) rr(c, 78 + LINES[n][0] * 36, 58 + n * 34, 5, 22, '#e9f1ff', 2) }
-  const tx = canvas(704, 480, code(LINES.length)), face = new Mesh(new PlaneGeometry(3.02, 2.06), new MeshBasicMaterial({ map: tx.t })); face.position.z = 0.056
-  const edge = (w: number, h: number, z: number, m: Material, k = 0.02) => inst(unit, m, [[0, h / 2, z, w, k, k], [0, -h / 2, z, w, k, k], [w / 2, 0, z, k, h, k], [-w / 2, 0, z, k, h, k]])
-  const editor = grp(rb(3.14, 2.18, 0.1, M.dark, 0.06), face, edge(3.14, 2.18, 0.05, M.blue)); editor.rotation.y = 0.16
-  // The product, in solid pieces
-  const card = std(0x1b4fa8, { emissive: 0x0a2d73, emissiveIntensity: 0.7, metalness: 0.2 }), W = 1.62, H = 2.2, app = grp(rb(W, H, 0.12, std(0x0b1c40, { metalness: 0.3 }), 0.07), edge(W, H, 0.06, M.cyan, 0.024)); app.rotation.y = -0.2
-  const piece = (w: number, h: number, x: number, y: number, m: Material, ...more: Object3D[]) => { const g = grp(rb(w, h, 0.1, m, 0.04), ...more); g.position.set(x, y, 0.12); app.add(g); return g }
-  const row = (w: number, x: number, y: number, m: Material) => at(rb(w, 0.06, 0.03, m, 0.015), x, y, 0.06)
-  const pieces = [piece(1.4, 0.24, 0, 0.88, M.blue, row(0.42, -0.4, 0, M.white), at(cy(0.05, 0.03, M.white, 20), 0.56, 0, 0.06)), piece(0.66, 0.52, -0.37, 0.44, card, row(0.3, -0.12, 0.13, M.pale), row(0.46, -0.04, -0.06, M.white)), piece(0.66, 0.52, 0.37, 0.44, card, row(0.3, -0.12, 0.13, M.pale), row(0.4, -0.07, -0.06, M.ok)), piece(1.4, 0.74, 0, -0.24, card), piece(0.66, 0.24, -0.37, -0.82, M.cyan, row(0.3, 0, 0, M.white)), piece(0.66, 0.24, 0.37, -0.82, card, row(0.3, 0, 0, M.pale))]
-  ;(pieces[0].children[2] as Mesh).rotation.x = Math.PI / 2
-  const tall = [0.2, 0.36, 0.28, 0.46, 0.4, 0.58], chart = tall.map((h, i) => { const b = grp(at(rb(0.13, 1, 0.1, i === 5 ? M.cyan : M.blue, 0.02), 0, 0.5, 0)); b.position.set(-0.5 + i * 0.2, -0.31, 0.06); b.scale.y = h; pieces[3].add(b); return b })
-  // Light travels from the written lines into the product
-  const paths = [0.55, 0.15, -0.25, -0.6].map((y, i) => new CatmullRomCurve3([new Vector3(-0.1, 0.35 + y, -0.35), new Vector3(0.35, 0.6 + y * 0.8, 0.5 + i * 0.1), new Vector3(0.85, 0.3 + y * 0.7, 0.95), new Vector3(1.2, -0.1 + y * 0.8, 0.75)]))
-  const haze = new MeshBasicMaterial({ color: 0x04d8fa, transparent: true, opacity: 0.22, blending: AdditiveBlending, depthWrite: false }), lines = grp(...paths.map(p => new Mesh(new TubeGeometry(p, 40, 0.008, 6), haze)))
-  const N = 32, sparks = inst(new SphereGeometry(0.032, 10, 10), M.cyan, Array.from({ length: N }, () => [0, 0, 0] as [number, number, number])), o = new Object3D(), v = new Vector3()
-  // Four checks on the base
-  const rings: Mesh[] = [], nodes: Mesh[] = [], fill = at(bx(1, 0.03, 0.05, M.ok), 0, 0.005, 0), track = grp(at(bx(2.7, 0.025, 0.04, M.steel), 0, 0, 0), fill)
-  for (let i = 0; i < 4; i++) { const x = -1.35 + i * 0.9, n = at(new Mesh(new SphereGeometry(0.105, 24, 24), M.ok), x, 0.05, 0), r = at(new Mesh(new TorusGeometry(0.2, 0.014, 8, 40), M.ok), x, 0, 0); r.rotation.x = Math.PI / 2; nodes.push(n); rings.push(r); track.add(n, r) }
-  const base = grp(rb(3.9, 0.12, 2.5, M.floor, 0.06), at(inst(unit, M.blue, [[0, 0, 1.25, 3.8, 0.03, 0.02], [0, 0, -1.25, 3.8, 0.03, 0.02], [1.95, 0, 0, 0.02, 0.03, 2.4], [-1.95, 0, 0, 0.02, 0.03, 2.4]]), 0, 0.05, 0))
-  const m = model([at(base, 0, -1.72, 0), at(editor, -0.5, 0.2, -0.6), at(app, 1.08, -0.35, 0.5), at(track, -0.1, -1.6, 0.98), lines, sparks], 0.17, -0.3, 1.08)
-  const ease = (k: number) => 1 - (1 - k) ** 3, part = (c: number, from: number, len: number) => Math.min(1, Math.max(0, (c - from) / len)); let was = -1
+  const W = 2.75, R = 0.3, GAP = 1.22, CYCLE = 12, Y = [-1.3, -1.3 + GAP, -1.3 + GAP * 2]
+  const soft = canvas(256, 256, c => { const g = c.createRadialGradient(128, 128, 0, 128, 128, 128); g.addColorStop(0, 'rgba(40,150,255,.75)'); g.addColorStop(0.45, 'rgba(2,104,244,.3)'); g.addColorStop(1, 'rgba(2,104,244,0)'); c.fillStyle = g; c.fillRect(0, 0, 256, 256) })
+  const body = (c: number, e: number) => new MeshPhysicalMaterial({ color: c, metalness: 0.25, roughness: 0.32, clearcoat: 0.8, clearcoatRoughness: 0.25, emissive: e, emissiveIntensity: 0.55 })
+  const edges = [0x0268f4, 0x1a9bff, 0x04d8fa].map(c => new MeshBasicMaterial({ color: c })), full = edges.map(e => e.color.clone()), DIM = new Color(0x1b3566)
+  const auras = [0, 1, 2].map(() => new MeshBasicMaterial({ map: soft.t, transparent: true, opacity: 0.5, blending: AdditiveBlending, depthWrite: false }))
+  const layer = (i: number, c: number, e: number) => { const au = new Mesh(new PlaneGeometry(W * 1.5, W * 1.5), auras[i]); au.rotation.x = -Math.PI / 2; au.position.y = -0.14; return grp(slab(W, W, 0.14, R, body(c, e)), at(rim(W, R, edges[i]), 0, 0, 0), au) }
+  const top = (w: number, t: CanvasTexture) => { const p = new Mesh(new PlaneGeometry(w, w), new MeshBasicMaterial({ map: t, transparent: true })); p.rotation.x = -Math.PI / 2; p.position.y = 0.104; return p }
+  // Foundation: machines and the routes between them
+  const l0 = layer(0, 0x0f3a86, 0x0b3a94), leds: Mesh[] = [], routes = canvas(512, 512, c => { c.strokeStyle = '#5fa4ff'; c.lineWidth = 6; c.lineCap = 'round'; for (const [x1, y1, x2, y2] of [[110, 110, 256, 110], [256, 110, 256, 256], [402, 110, 402, 256], [402, 256, 256, 256], [110, 402, 110, 256], [110, 256, 256, 256], [256, 256, 256, 402], [256, 402, 402, 402]]) { c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke() } c.fillStyle = '#04d8fa'; for (const [x, y] of [[256, 256], [256, 110], [402, 256], [110, 256], [256, 402]]) { c.beginPath(); c.arc(x, y, 9, 0, 7); c.fill() } })
+  const unitA = std(0x3f7be0, { metalness: 0.2, roughness: 0.35, emissive: 0x1048b8, emissiveIntensity: 0.6 })
+  for (const [x, z] of [[-0.86, -0.86], [0.86, -0.86], [-0.86, 0.86], [0.86, 0.86]]) { const g = new Group(); for (let k = 0; k < 3; k++) { g.add(at(slab(0.5, 0.5, 0.09, 0.08, unitA), 0, 0.16 + k * 0.17, 0)); const d = at(bx(0.2, 0.026, 0.012, k === 2 ? M.ok : M.cyan), -0.06, 0.16 + k * 0.17, 0.288), d2 = at(bx(0.012, 0.026, 0.2, M.cyan), 0.288, 0.16 + k * 0.17, -0.04); leds.push(d, d2); g.add(d, d2) } l0.add(at(g, x, 0.02, z)) }
+  l0.add(top(2.5, routes.t))
+  // Code
+  const LN = [[0, 34, 1], [1, 50, 0], [1, 38, 2], [2, 56, 0], [2, 44, 3], [1, 26, 1], [1, 48, 2], [2, 40, 3], [2, 54, 0], [1, 30, 1], [0, 20, 0]], INK = ['#7f9fd8', '#1fe0ff', '#8ec1ff', '#45f0b4']
+  const code = (n: number) => (c: Ctx) => { rr(c, 8, 8, 752, 752, '#071938', 46); rr(c, 8, 8, 752, 66, '#0f2c63', 40); ['#ff6b6b', '#ffc857', '#2be6a0'].forEach((f, i) => { c.fillStyle = f; c.beginPath(); c.arc(54 + i * 38, 42, 11, 0, 7); c.fill() }); rr(c, 8, 74, 78, 640, '#0a2350', 0); LN.forEach(([tab, w, ink], i) => { const y = 106 + i * 57; rr(c, 32, y + 6, 30, 12, i < n ? '#4a78c8' : '#1c3a75', 6); if (i >= n) return; const x = 116 + tab * 48; rr(c, x, y, w * 5, 24, INK[ink], 12); rr(c, x + w * 5 + 16, y, 70 + ((i * 47) % 150), 24, '#3a63b4', 12) }); if (n < LN.length) rr(c, 116 + LN[n][0] * 48, 100 + n * 57, 8, 36, '#ffffff', 3) }
+  const tx = canvas(768, 768, code(LN.length)), l1 = layer(1, 0x1246a0, 0x0b3a94); l1.add(top(2.62, tx.t))
+  // Product
+  const l2 = layer(2, 0x1a5cc4, 0x0d48b0), ui = canvas(768, 768, c => {
+    rr(c, 8, 8, 752, 752, '#eef4ff', 46); rr(c, 8, 8, 150, 752, '#0b2a5b', 46); rr(c, 110, 8, 48, 752, '#0b2a5b', 0); rr(c, 46, 46, 74, 74, '#0268f4', 20); for (let i = 0; i < 5; i++) rr(c, 46, 170 + i * 84, 74, 46, i ? '#1b4687' : '#04d8fa', 16)
+    rr(c, 192, 48, 250, 30, '#0b2a5b', 15); rr(c, 192, 92, 160, 18, '#9db4d8', 9); c.fillStyle = '#0268f4'; c.beginPath(); c.arc(700, 72, 30, 0, 7); c.fill()
+    for (let i = 0; i < 3; i++) { rr(c, 192 + i * 182, 148, 164, 130, '#ffffff', 22); rr(c, 214 + i * 182, 172, 80, 16, '#a9bddd', 8); rr(c, 214 + i * 182, 206, 112, 34, ['#0268f4', '#12b886', '#0b2a5b'][i], 14) }
+    rr(c, 192, 302, 346, 250, '#ffffff', 22); rr(c, 560, 302, 168, 250, '#ffffff', 22); c.lineWidth = 26; c.strokeStyle = '#dbe6f8'; c.beginPath(); c.arc(644, 412, 54, 0, 7); c.stroke(); c.strokeStyle = '#0268f4'; c.beginPath(); c.arc(644, 412, 54, -1.57, 2.4); c.stroke(); c.strokeStyle = '#04d8fa'; c.beginPath(); c.arc(644, 412, 54, 2.4, 3.6); c.stroke(); rr(c, 596, 504, 96, 16, '#a9bddd', 8)
+    rr(c, 192, 576, 536, 150, '#ffffff', 22); for (let i = 0; i < 3; i++) { c.fillStyle = ['#0268f4', '#12b886', '#04d8fa'][i]; c.beginPath(); c.arc(228, 608 + i * 43, 13, 0, 7); c.fill(); rr(c, 256, 600 + i * 43, 210 - i * 36, 16, '#5d7aa8', 8); rr(c, 600, 598 + i * 43, 98, 20, i === 1 ? '#c8f5e3' : '#dbe6f8', 10) }
+  }); l2.add(top(2.62, ui.t))
+  const P = 2.62 / 768, tall = [0.16, 0.28, 0.22, 0.38, 0.32, 0.52], bars3 = tall.map((h, i) => { const b = grp(at(rb(0.13, 1, 0.13, i === 5 ? std(0x04d8fa, { emissive: 0x04a0d8, emissiveIntensity: 0.6, metalness: 0.1 }) : std(0x0268f4, { emissive: 0x0146c8, emissiveIntensity: 0.5, metalness: 0.1 }), 0.03), 0, 0.5, 0)); b.position.set((226 + i * 55 - 384) * P, 0.1, (490 - 384) * P); b.scale.y = h; l2.add(b); return b })
+  // Light climbing between the layers
+  const beam = new MeshBasicMaterial({ color: 0x2fb6ff, transparent: true, opacity: 0.2, blending: AdditiveBlending, depthWrite: false }), posts: [number, number, number, number, number, number][] = [], spots = [[-1.02, 1.02], [1.02, 1.02], [1.02, -1.02], [-1.02, -1.02], [0, 1.15], [1.15, 0]]
+  for (const [x, z] of spots) for (const y of [0, 1]) posts.push([x, Y[y] + GAP / 2, z, 0.03, GAP - 0.2, 0.03])
+  const N = 36, sparks = inst(new SphereGeometry(0.036, 12, 12), M.cyan, Array.from({ length: N }, () => [0, 0, 0] as [number, number, number])), o = new Object3D(), scan = rim(W + 0.12, R, new MeshBasicMaterial({ color: 0x9df0ff, transparent: true, opacity: 0.9 }), 0.012)
+  const m = model([at(l0, 0, Y[0], 0), at(l1, 0, Y[1], 0), at(l2, 0, Y[2], 0), inst(unit, beam, posts), sparks, scan], 0.5, 0.72, 1.02), ease = (k: number) => 1 - (1 - k) ** 3, part = (c: number, f: number, l: number) => Math.min(1, Math.max(0, (c - f) / l)); let was = -1
+  const bl = blink(leds)
   // Standing still shows the finished work
   m.tick = t => {
-    const c = t === 0 ? CYCLE - 2 : t % CYCLE, out = part(c, CYCLE - 0.9, 0.9), n = out ? 0 : Math.min(LINES.length, Math.floor((c / WRITE) * (LINES.length + 1)))
-    if (n !== was) { was = n; tx.redraw(code(n)) }
-    pieces.forEach((g, i) => { const k = ease(part(c, 0.9 + i * 1.05, 1.1)) * (1 - out); g.position.z = 0.12 + (1 - k) * 0.9; g.scale.setScalar(Math.max(0.001, k)) })
-    chart.forEach((b, i) => { b.scale.y = Math.max(0.001, tall[i] * ease(part(c, 4.7 + i * 0.16, 0.8))) })
-    const live = part(c, 0.6, 0.6) * (1 - part(c, WRITE - 0.2, 0.8)); haze.opacity = 0.05 + 0.2 * live
-    for (let i = 0; i < N; i++) { const k = (t * 0.42 + i / N + (i % 4) * 0.13) % 1; paths[i % 4].getPoint(k, v); o.position.copy(v); o.scale.setScalar(Math.max(0.0001, Math.sin(k * Math.PI) * live)); o.updateMatrix(); sparks.setMatrixAt(i, o.matrix) } sparks.instanceMatrix.needsUpdate = true
-    const go = part(c, WRITE, 2.6) * (1 - out); fill.scale.x = Math.max(0.001, go * 2.7); fill.position.x = -1.35 + (go * 2.7) / 2
-    nodes.forEach((x, i) => { const d = go >= (i + 0.02) / 3.02 && go > 0, now = part(c, WRITE + (i / 3) * 2.6, 0.7); x.material = rings[i].material = d ? M.ok : M.steel; rings[i].scale.setScalar(d ? 1 + Math.sin(now * Math.PI) * 0.45 : 1) })
+    const c = t === 0 ? CYCLE - 2 : t % CYCLE, off = part(c, CYCLE - 0.8, 0.8), n = off ? LN.length : Math.floor(part(c, 1.6, 3.6) * LN.length), fade = 1 - off
+    if (n !== was) { was = n; tx.redraw(code(n)) } if (t) bl(t)
+    edges.forEach((e, i) => { const k = ease(part(c, i * 2.5, 1)) * fade; e.color.copy(DIM).lerp(full[i], k); auras[i].opacity = 0.12 + 0.5 * k })
+    bars3.forEach((b, i) => { b.scale.y = Math.max(0.01, tall[i] * ease(part(c, 5.4 + i * 0.16, 0.9)) * fade) })
+    const live = part(c, 0.8, 0.8) * (1 - part(c, CYCLE - 1.6, 0.8)); beam.opacity = 0.08 + 0.24 * live
+    for (let i = 0; i < N; i++) { const s = spots[i % spots.length], k = (t * 0.28 + i * 0.137) % 1; o.position.set(s[0], Y[0] + 0.1 + k * (GAP * 2 - 0.2), s[1]); o.scale.setScalar(Math.max(0.0001, Math.sin(k * Math.PI) * live)); o.updateMatrix(); sparks.setMatrixAt(i, o.matrix) } sparks.instanceMatrix.needsUpdate = true
+    const u = part(c, 0.2, 6); scan.position.y = Y[0] - 0.15 + ease(u) * (GAP * 2 + 0.35); scan.visible = u > 0 && u < 1
   }
   return m
 }
