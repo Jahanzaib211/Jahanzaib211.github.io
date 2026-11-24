@@ -7,5 +7,6 @@
 - Company and policy pages in Arabic, Urdu and Chinese
 - Security policy in every page, protection against framing
 - Form no longer jumps, an unsent brief is kept, models return after a graphics loss
+- The form checks every step again before it is sent, and changed answers are never lost after a failed send
 - A click is no longer cancelled by the recovery reload in Firefox
 - Checks in Chromium, Firefox and WebKit
