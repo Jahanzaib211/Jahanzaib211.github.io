@@ -124,6 +124,12 @@ test('Contact us works on the not found page and never locks scrolling', async (
 test('keyboard focus is visible on main buttons', async () => {
   const p = await open('services/'), b = p.locator('header .btn'); const a = await b.screenshot(); await p.locator('.lang summary').focus(); await p.keyboard.press('Tab'); assert.ok(await b.evaluate(e => e === document.activeElement)); const c = await b.screenshot(); assert.notDeepEqual(a, c); await p.context().close()
 })
+test('the keyboard reaches the privacy choice right after the skip link', async () => {
+  const p = await open('services/', { ask: true }); assert.ok(await p.evaluate(() => document.querySelector('.skip').nextElementSibling.matches('.consent'))); await p.context().close()
+})
+test('a wrong answer points to its message', async () => {
+  const p = await open('products/'); await toStep(p, 1); await p.locator('.lead-nav .btn').click(); const s = p.locator('#l-story'); assert.equal(await s.getAttribute('aria-describedby'), 'lead-err'); assert.ok(await p.locator('#lead-err').textContent()); await s.fill('Now it is answered well.'); assert.equal(await s.getAttribute('aria-describedby'), null); await p.context().close()
+})
 test('the language menu is closed when Back returns to the page', async () => {
   const p = await open('services/'); await p.locator('.lang summary').click(); await p.evaluate(() => dispatchEvent(new PageTransitionEvent('pagehide', { persisted: true }))); assert.equal(await p.locator('details.lang').evaluate(e => e.open), false); await p.context().close()
 })

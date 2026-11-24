@@ -20,13 +20,13 @@ let box: HTMLDialogElement | null = null, step = 0, ctx = '', from: HTMLElement 
 
 const chips = (n: string, o: Opt[], multi = false) => `<div class="ch">${o.map(x => `<label><input type="${multi ? 'checkbox' : 'radio'}" name="${n}" value="${esc(x.id)}"><span>${esc(t(x.label))}</span></label>`).join('')}</div>`
 const q = (i: string, n: string, body: string) => `<div class="q" data-need="${n}" role="group" aria-labelledby="q-${n}"><span id="q-${n}">${esc(Q(i))}</span>${body}</div>`
-const inp = (i: string, n: string, type: string, auto: string) => `<div class="q" data-need="${n}"><label for="l-${n}">${esc(Q(i))}</label><input id="l-${n}" type="${type}" name="${n}" autocomplete="${auto}" maxlength="120"${type === 'email' ? ' dir="ltr"' : ''}></div>`
+const inp = (i: string, n: string, type: string, auto: string) => `<div class="q" data-need="${n}"><label for="l-${n}">${esc(Q(i))}</label><input id="l-${n}" aria-required="true" type="${type}" name="${n}" autocomplete="${auto}" maxlength="120"${type === 'email' ? ' dir="ltr"' : ''}></div>`
 const STEPS = () => [
   `<div class="q" data-need="problem" role="group" aria-label="${esc(t(form0.steps[0].title))}">${chips('problem', form0.problems)}</div>`,
-  `<div class="q" data-need="story"><label for="l-story">${esc(Q('story'))}</label><textarea id="l-story" name="story" maxlength="900"></textarea></div>${q('impacts', 'impacts', chips('impacts', form0.impacts, true))}`,
+  `<div class="q" data-need="story"><label for="l-story">${esc(Q('story'))}</label><textarea id="l-story" name="story" aria-required="true" maxlength="900"></textarea></div>${q('impacts', 'impacts', chips('impacts', form0.impacts, true))}`,
   q('sizes', 'size', chips('size', form0.sizes)) + q('places', 'place', chips('place', form0.places)) + q('routes', 'route', chips('route', form0.routes)),
   q('timing', 'timing', chips('timing', form0.timing)) + q('budgets', 'budget', chips('budget', form0.budgets)) + q('roles', 'role', chips('role', form0.roles)),
-  `<div class="two-col">${inp('name', 'name', 'text', 'name')}${inp('email', 'email', 'email', 'email')}${inp('company', 'company', 'text', 'organization')}${inp('country', 'country', 'text', 'country-name')}</div><div class="q" data-need="consent"><label class="ok-line"><input type="checkbox" name="consent"><span>${esc(Q('consent'))} <a href="${document.querySelector<HTMLAnchorElement>('footer a[href$="privacy.html"]')!.pathname}" target="_blank" rel="noopener">${document.querySelector('footer a[href$="privacy.html"]')?.textContent ?? ''}</a></span></label></div><input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:0;width:1px;height:1px;opacity:0;padding:0;border:0">`,
+  `<div class="two-col">${inp('name', 'name', 'text', 'name')}${inp('email', 'email', 'email', 'email')}${inp('company', 'company', 'text', 'organization')}${inp('country', 'country', 'text', 'country-name')}</div><div class="q" data-need="consent"><label class="ok-line"><input type="checkbox" name="consent" aria-required="true"><span>${esc(Q('consent'))} <a href="${document.querySelector<HTMLAnchorElement>('footer a[href$="privacy.html"]')!.pathname}" target="_blank" rel="noopener">${document.querySelector('footer a[href$="privacy.html"]')?.textContent ?? ''}</a></span></label></div><input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:0;width:1px;height:1px;opacity:0;padding:0;border:0">`,
 ]
 const LAST = 5
 const g1 = (k: string) => ({ problem: 'problems', size: 'sizes', place: 'places', route: 'routes', timing: 'timing', budget: 'budgets', role: 'roles' } as Record<string, string>)[k] as 'sizes'
@@ -39,7 +39,7 @@ function make() {
   far = 0; box = document.createElement('dialog'); box.className = 'lead-box'
   const titles = [...form0.steps.map(s => t(s.title)), L.rev]
   box.innerHTML = `<div class="lead-grid"><aside class="lead-side"><img src="/brand/alx-mark.svg" alt="" width="92" height="42"><ol class="lead-steps">${titles.map((x, i) => `<li><button type="button" data-go="${i}"><i aria-hidden="true">${i + 1}</i><span>${esc(x)}</span></button></li>`).join('')}</ol><p class="lead-tip"></p><div class="lead-sum"><b>${esc(L.brief)}</b><ul></ul></div></aside>
-<form method="dialog" novalidate><div class="lead-top"><p class="where" aria-live="polite"></p><button type="button" class="lead-x">${esc(L.close)}</button></div><div class="lead-bar"><i></i></div>${STEPS().map((b, i) => `<fieldset data-step="${i}"><legend id="lead-t${i}" tabindex="-1">${esc(titles[i])}</legend><p class="hint">${esc(t(form0.steps[i].hint))}</p>${b}</fieldset>`).join('')}<fieldset data-step="5"><legend id="lead-t5" tabindex="-1">${esc(L.rev)}</legend><p class="hint">${esc(L.revH)}</p><dl class="lead-review"></dl></fieldset><p class="err" role="alert"></p><div class="lead-nav"><button type="button" class="back">${esc(L.back)}</button><button type="submit" class="btn"></button></div></form></div>`
+<form method="dialog" novalidate><div class="lead-top"><p class="where" aria-live="polite"></p><button type="button" class="lead-x">${esc(L.close)}</button></div><div class="lead-bar"><i></i></div>${STEPS().map((b, i) => `<fieldset data-step="${i}"><legend id="lead-t${i}" tabindex="-1">${esc(titles[i])}</legend><p class="hint">${esc(t(form0.steps[i].hint))}</p>${b}</fieldset>`).join('')}<fieldset data-step="5"><legend id="lead-t5" tabindex="-1">${esc(L.rev)}</legend><p class="hint">${esc(L.revH)}</p><dl class="lead-review"></dl></fieldset><p class="err" id="lead-err" role="alert"></p><div class="lead-nav"><button type="button" class="back">${esc(L.back)}</button><button type="submit" class="btn"></button></div></form></div>`
   document.body.append(box)
   const f = box.querySelector('form')!, story = box.querySelector<HTMLTextAreaElement>('#l-story')!
   const meter = document.createElement('div'); meter.className = 'lead-meter'; meter.innerHTML = '<i><b></b></i><span></span>'; story.after(meter)
@@ -56,7 +56,7 @@ function make() {
     else if (i.type === 'radio' && pointer) { const all = [...box!.querySelectorAll<HTMLElement>(`fieldset[data-step="${step}"] [data-need]`)], n = all[all.indexOf(need!) + 1]; if (n) n.scrollIntoView({ block: 'nearest', behavior: matchMedia('(prefers-reduced-motion:reduce)').matches ? 'auto' : 'smooth' }) }
   })
   f.addEventListener('input', e => { (e.target as HTMLElement).closest('[data-need]')?.classList.remove('bad'); summary() })
-  for (const n of ['input', 'change']) f.addEventListener(n, e => (e.target as HTMLElement).closest('[data-need]')?.querySelectorAll('[aria-invalid]').forEach(x => x.removeAttribute('aria-invalid')))
+  for (const n of ['input', 'change']) f.addEventListener(n, e => (e.target as HTMLElement).closest('[data-need]')?.querySelectorAll('[aria-invalid]').forEach(x => { x.removeAttribute('aria-invalid'); x.removeAttribute('aria-describedby') }))
   f.addEventListener('focusout', e => { const i = e.target as HTMLInputElement; if (i.name === 'email' && i.value && !mailOk(i.value)) { i.closest('[data-need]')!.classList.add('bad'); box!.querySelector('.err')!.textContent = L.mailErr } })
   box.addEventListener('close', () => { document.documentElement.style.overflow = ''; (from?.isConnected ? from : document.querySelector<HTMLElement>('header [data-lead]'))?.focus(); if (!box!.querySelector('.lead-done') && far > 0) toast({ text: L.tKeep, action: { label: L.next, run: () => { void openLead(ctx, null, from!, true) } }, ms: 6500 }) })
   f.addEventListener('submit', e => { e.preventDefault(); advance() })
@@ -91,7 +91,7 @@ function check(at = step) {
   const d = data(), err = box!.querySelector('.err')!; let first: HTMLElement | null = null, msg = ''
   for (const el of box!.querySelectorAll<HTMLElement>(`fieldset[data-step="${at}"] [data-need]`)) {
     const n = el.dataset.need!, v = String(d.get(n) ?? '').trim(), mail = n === 'email' && !!v && !mailOk(v), bad = !v || mail || (n === 'story' && v.length < 12)
-    el.classList.toggle('bad', bad); el.querySelectorAll('input,textarea').forEach(x => x.setAttribute('aria-invalid', String(bad))); if (bad && !first) { first = el; msg = mail ? L.mailErr : L.need }
+    el.classList.toggle('bad', bad); el.querySelectorAll('input,textarea').forEach(x => { x.setAttribute('aria-invalid', String(bad)); if (bad) x.setAttribute('aria-describedby', 'lead-err'); else x.removeAttribute('aria-describedby') }); if (bad && !first) { first = el; msg = mail ? L.mailErr : L.need }
   }
   err.textContent = msg; if (first) { (first.querySelector<HTMLElement>('input,textarea'))!.focus({ preventScroll: true }); first.scrollIntoView({ block: 'nearest' }) }
   return !first
