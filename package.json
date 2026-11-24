@@ -6,7 +6,9 @@
     "dev": "node scripts/pages.mjs && vite",
     "build": "node scripts/pages.mjs && tsc --noEmit && vite build",
     "preview": "vite preview",
-    "test": "node --test tests/site.test.mjs"
+    "test": "node scripts/test.mjs",
+    "ci": "npm run build && git diff --exit-code --stat -- ':!public/sitemap.xml' && npm test",
+    "ci:all": "bash scripts/ci-all.sh"
   },
   "dependencies": {
     "gsap": "^3.15.1",

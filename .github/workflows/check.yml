@@ -4,10 +4,17 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: check-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   check:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -15,6 +22,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+          cache: npm
       - run: npm ci --no-fund --no-audit
       - run: npm run build
-      - run: CHROME="$(command -v google-chrome)" npm test
+      - name: Generated pages are committed
+        run: git diff --exit-code --stat -- ':!public/sitemap.xml'
+      - if: matrix.browser != 'chromium'
+        run: npx playwright-core install --with-deps ${{ matrix.browser }}
+      - run: npm test
+        env:
+          BROWSER: ${{ matrix.browser }}
+          SHARDS: 2

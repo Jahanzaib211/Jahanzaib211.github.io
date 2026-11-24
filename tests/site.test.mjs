@@ -1,11 +1,16 @@
 // Browser checks on the built site. Run "npm run build" first. Other hosts are blocked and nothing is sent.
-import { test, before, after } from 'node:test'
+import { test as run, before, after } from 'node:test'
 import assert from 'node:assert/strict'
 import { createServer } from 'node:http'
 import { existsSync, readFileSync, statSync, globSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { extname, join, resolve } from 'node:path'
-import { chromium } from 'playwright-core'
+import * as engines from 'playwright-core'
+const ENGINE = process.env.BROWSER ?? 'chromium', [PART, PARTS] = (process.env.SHARD ?? '0/1').split('/').map(Number)
+let nth = 0
+// gl: the check needs WebGL. It is skipped only in a browser that has none, and never in Chromium
+let webgl = true
+const test = (name, fn, gl) => { if (nth++ % PARTS === PART) run(name, t => gl && !webgl ? t.skip('this browser has no WebGL') : fn(t)) }
 const DIST = resolve(process.env.DIST ?? 'dist'), TYPE = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.json': 'application/json', '.woff2': 'font/woff2' }
 let server, base, browser, missing = ''
 const LANGS = ['', 'ar/', 'ur/', 'zh/']
@@ -19,7 +24,9 @@ before(async () => {
   }).listen(0, '127.0.0.1'); await new Promise(r => server.once('listening', r)); base = `http://127.0.0.1:${server.address().port}/`
   // A test must never open the mail app or any other program on this computer
   const stub = mkdtempSync(join(tmpdir(), 'no-open-')); writeFileSync(join(stub, 'xdg-open'), '#!/bin/sh\nexit 0\n', { mode: 0o755 })
-  browser = await chromium.launch({ env: { ...process.env, PATH: `${stub}:${process.env.PATH}` }, ...(process.env.CHROME ? { executablePath: process.env.CHROME } : { channel: 'chrome' }), args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] })
+  browser = await engines[ENGINE].launch({ env: { ...process.env, PATH: `${stub}:${process.env.PATH}` }, ...(ENGINE === 'chromium' ? { ...(process.env.CHROME ? { executablePath: process.env.CHROME } : { channel: 'chrome' }), args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] } : {}) })
+  const p = await browser.newPage(); webgl = await p.evaluate(() => !!document.createElement('canvas').getContext('webgl2')); await p.close()
+  if (!webgl && ENGINE === 'chromium') throw new Error('Chromium must have WebGL, or the checks of the models would not run')
 })
 const answer = async (p, v) => { await p.locator(`.consent [data-v=${v}]`).click() }
 after(async () => { await browser?.close(); server?.closeAllConnections(); server?.close() })
@@ -58,13 +65,13 @@ test('the model returns after the browser takes the graphics away, also through 
   const ok = () => p.evaluate(() => !document.documentElement.classList.contains('no3d') && getComputedStyle(document.getElementById('world')).display !== 'none' && !document.getElementById('world').getContext('webgl2').isContextLost())
   assert.ok(await ok(), 'after restore')
   await p.locator('header nav a[href="/insights/"]').click(); await p.waitForURL('**/insights/'); await p.goBack(); await p.waitForTimeout(2500); assert.ok(await ok(), 'after Back'); assert.deepEqual(p.errors, []); await p.context().close()
-})
+}, true)
 test('without graphics every main page still shows the mark and no empty band', async () => {
   for (const x of ['', 'products/', 'services/', 'company/']) {
     const p = await open(x, { w: 390, h: 844 }); await ready(p); await p.evaluate(() => document.getElementById('world').getContext('webgl2').getExtension('WEBGL_lose_context').loseContext()); await p.waitForTimeout(300)
     assert.ok(await p.locator('.flat').isVisible(), x); const top = await p.evaluate(() => document.querySelector('.flat').getBoundingClientRect().top - document.querySelector('header').getBoundingClientRect().bottom); assert.ok(top < 140, `${x} ${top}`); await p.context().close()
   }
-})
+}, true)
 const pick = async (p, q) => { const i = p.locator(q).first(); await i.locator('xpath=..').locator('span').evaluate(e => e.scrollIntoView({ block: 'center', behavior: 'instant' })); await i.locator('xpath=..').locator('span').click(); assert.ok(await i.isChecked(), q) }
 const toStep = async (p, n) => {
   await p.locator('[data-lead=""]').first().evaluate(e => e.click()); await p.locator('.lead-box[open]').waitFor()
@@ -115,13 +122,13 @@ test('with reduced motion the model follows a choice', async () => {
   const p = await open('products/', { reducedMotion: 'reduce' }); await ready(p); await p.locator('#nova').scrollIntoViewIfNeeded(); await p.waitForTimeout(2500)
   const n = await p.evaluate(async () => { const g = document.getElementById('world').getContext('webgl2'); let f = new Set(), o = g.drawElements.bind(g), q = 0; g.drawElements = (...a) => { f.add(performance.now() | 0); q++; return o(...a) }; document.getElementById('t-2').click(); const t = performance.now(); let ticks = 0, seen = 0; while (performance.now() - t < 1500) { const b = q; await new Promise(requestAnimationFrame); ticks++; if (q > b) seen++ } return seen })
   assert.ok(n > 3, `frames ${n}`); await p.context().close()
-})
+}, true)
 test('a missing file after a release reloads once, not forever', async () => {
   const p = await open(''); await ready(p); let loads = 0; p.on('load', () => loads++)
   missing = globSync('assets/lead-*.js', { cwd: DIST })[0]
   try { await p.locator('header [data-lead]').click(); await p.waitForTimeout(2500); assert.equal(loads, 1); await p.locator('header [data-lead]').click(); await p.waitForURL('**/contact/') } finally { missing = '' }
   await p.context().close()
-})
+}, true)
 test('no cookies, no local storage and no third party requests', async () => {
   const bad = []
   for (const x of ['', 'insights/', 'ar/', 'contact/', 'privacy.html']) { const c = await browser.newContext(), p = await c.newPage(); await c.route(u => u.hostname !== '127.0.0.1', r => { bad.push(r.request().url()); return r.abort() }); await p.goto(base + x); await p.waitForTimeout(800); if ((await c.cookies()).length || await p.evaluate(() => localStorage.length)) bad.push(x); await c.close() }
@@ -161,10 +168,10 @@ test('the consent bar never covers the main button of a page', async () => {
 })
 test('the background moves, and is a still picture when less motion is asked for', async () => {
   for (const [m, moves] of [['no-preference', true], ['reduce', false]]) { const p = await open('insights/', { reducedMotion: m }); await p.locator('.bg.on').waitFor({ state: 'attached', timeout: 8000 }); await p.waitForTimeout(1500); const n = () => p.evaluate(() => Number(document.querySelector('.bg canvas').dataset.frames)), a = await n(); await p.waitForTimeout(1200); assert.equal(await n() > a, moves, m); assert.deepEqual(p.errors, []); await p.context().close() }
-})
+}, true)
 test('the background recovers when the browser takes the graphics away', async () => {
   const p = await open('contact/'); await p.locator('.bg.on').waitFor({ state: 'attached' }); await p.evaluate(() => { const x = document.querySelector('.bg canvas').getContext('webgl').getExtension('WEBGL_lose_context'); x.loseContext(); setTimeout(() => x.restoreContext(), 300) }); await p.waitForTimeout(150); await p.locator('.bg.on').waitFor({ state: 'attached', timeout: 4000 }); assert.deepEqual(p.errors, []); await p.context().close()
-})
+}, true)
 test('email links are marked so the network does not rewrite them', () => {
   for (const f of PAGES) { const h = readFileSync(join(DIST, f), 'utf8'), a = h.indexOf('<!--email_off-->'), b = h.indexOf('<!--/email_off-->'); assert.ok(a > 0 && b > h.lastIndexOf('mailto:'), f); assert.ok(h.indexOf('mailto:') > a, f) }
 })
@@ -183,6 +190,16 @@ test('company and policy pages exist in every language with the same parts as En
 test('another site cannot show the page in a frame', async () => {
   const c = await browser.newContext(); await c.route(u => !['127.0.0.1', 'localhost'].includes(u.hostname), r => r.abort())
   const p = await c.newPage(); await p.goto(base.replace('127.0.0.1', 'localhost') + 'frame'); let f; for (let i = 0; i < 40 && !f; i++) { f = p.frames().find(x => x.url().startsWith(base)); if (!f) await p.waitForTimeout(100) } assert.ok(f, p.frames().map(x => x.url()).join()); await f.waitForFunction(() => document.documentElement.classList.contains('framed'), null, { timeout: 8000 }); assert.equal(await f.evaluate(() => getComputedStyle(document.body).display), 'none'); await c.close()
+})
+test('without 3D the main button is free and the mark sits beside the words', async () => {
+  const bad = []
+  for (const [w, h] of [[1440, 900], [1280, 720], [1024, 768]]) for (const x of ['', 'services/', 'ar/', 'ur/company/', 'zh/']) {
+    const c = await browser.newContext({ viewport: { width: w, height: h } }); await c.addInitScript(() => { const g = HTMLCanvasElement.prototype.getContext; HTMLCanvasElement.prototype.getContext = function (k, ...a) { return /webgl/.test(k) ? null : g.call(this, k, ...a) } }); await c.route(u => u.hostname !== '127.0.0.1', r => r.abort())
+    const p = await c.newPage(); await p.goto(base + x); await p.waitForFunction(() => document.documentElement.classList.contains('no3d')); await p.locator('.consent').waitFor()
+    const r = await p.evaluate(() => { const b = e => document.querySelector(e).getBoundingClientRect(), f = b('.flat'), h = b('h1'), t = document.createRange(); t.selectNodeContents(document.querySelector('h1')); const q = t.getBoundingClientRect(); return { free: b('.hero .btn').bottom <= b('.consent').top, apart: f.left >= q.right - 1 || f.right <= q.left + 1, seen: f.width > 100 } })
+    if (!r.free || !r.apart || !r.seen) bad.push([w, x, r]); await c.close()
+  }
+  assert.deepEqual(bad, [])
 })
 test('every internal link and file exists', () => {
   const bad = new Set(); let n = 0

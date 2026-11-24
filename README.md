@@ -16,7 +16,15 @@ npm run build     # generates the pages, checks types, builds dist
 CHROME=/path/to/chrome npm test   # browser checks on dist, nothing is sent
 ```
 
-Without `CHROME`, the tests use an installed Google Chrome.
+Without `CHROME`, the tests use an installed Google Chrome. `npm run ci` runs what GitHub runs, and `npm run ci:all` adds Firefox and WebKit.
+
+## Documents
+
+- [Architecture](docs/ARCHITECTURE.md)
+- [Operations, publishing and undo](docs/OPERATIONS.md)
+- [Analytics and privacy](docs/PRIVACY.md)
+- [Changes](CHANGELOG.md)
+- [Contributing](CONTRIBUTING.md)
 
 ## How it is put together
 
