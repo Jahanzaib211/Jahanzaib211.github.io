@@ -71,7 +71,7 @@ export function createWorld(canvas: HTMLCanvasElement, reduced: boolean): World 
     const dt = Math.min((now - last) / 1000, 0.05); last = now
     if (reduced && !dirty && now > until) return
     const k1 = reduced ? 1 : 1 - Math.exp(-dt * 4), vh = innerHeight, unit = (2 * Math.tan((cam.fov * Math.PI) / 360) * cam.position.z) / vh
-    const wide = innerWidth >= 900 || (vh < 520 && innerWidth > vh), fit = innerWidth >= 900 && cam.aspect < 1.5 ? 0.8 : 1, time = reduced ? 0 : now / 1000
+    const wide = innerWidth >= 900 || (vh < 520 && innerWidth > vh), fit = innerWidth >= 900 && cam.aspect < 1.5 ? 0.8 : 1, short = !wide && vh < 700, time = reduced ? 0 : now / 1000
     px += (mx - px) * Math.min(1, dt * 4); py += (my - py) * Math.min(1, dt * 4)
     // Where each section's writing is now. Its model is pinned to that place, so both move as one.
     const placed = new Map<string, { y: number; side: number; on: boolean }>(); let logo: { y: number; x: number; s: number; on: boolean } | null = null
@@ -89,7 +89,7 @@ export function createWorld(canvas: HTMLCanvasElement, reduced: boolean): World 
       const pin = s.el.querySelector<HTMLElement>('[data-pin]')
       if (wide && pin) { const q = pin.getBoundingClientRect(), want = (q.top + q.bottom) / 2 - box.top; hold += (want - (hold || want)) * k1; if (!hold) hold = want; c = box.top + hold; c = Math.min(Math.max(c, Math.min(vh * 0.4, box.top + box.height)), Math.max(vh * 0.62, box.top + vh * 0.3)) }
       else if (wide) { const q = s.text.getBoundingClientRect(), half = Math.min(q.height / 2, vh * 0.36); c = Math.min(Math.max(vh / 2, q.top + half), q.bottom - half) }
-      else c = box.top + Math.min(vh * 0.3, 270) + (s.el.matches('.story-top,.hero') ? 0 : -30)
+      else c = box.top + (short ? vh * 0.21 : Math.min(vh * 0.3, 270)) + (s.el.matches('.story-top,.hero') ? 0 : -30)
       placed.set(name, { y: (vh / 2 - c) * unit, side: s.side, on: c > -vh * 0.2 && c < vh * 1.12 }); if (Math.abs(c - vh / 2) < vh * 1.4) get(name)
     }
     const isLogo = !!logo?.on
@@ -106,7 +106,7 @@ export function createWorld(canvas: HTMLCanvasElement, reduced: boolean): World 
     made.forEach((e, n) => {
       const at = placed.get(n), on = !!at?.on; e.w += ((on ? 1 : 0) - e.w) * (reduced ? 1 : 1 - Math.exp(-dt * (on ? 2.8 : 5)))
       e.pod.visible = e.w > 0.015; if (!e.pod.visible) return
-      if (at) { e.pod.position.set(wide ? at.side * 2.25 * Math.min(cam.aspect / 1.7, 1.1) : 0, at.y, 0); e.pod.scale.setScalar((wide ? 0.82 * fit : 0.6) * (e.m.s ?? 1)); e.pod.userData.side = at.side }
+      if (at) { e.pod.position.set(wide ? at.side * 2.25 * Math.min(cam.aspect / 1.7, 1.1) : 0, at.y, 0); e.pod.scale.setScalar((wide ? 0.82 * fit : short ? 0.46 : 0.6) * (e.m.s ?? 1)); e.pod.userData.side = at.side }
       e.pod.rotation.set(e.m.tilt + py * 0.28, e.m.turn * ((e.pod.userData.side ?? 1) < 0 ? -1 : 1) + (reduced ? 0 : Math.sin(now / 2600) * 0.16) + px * 0.5, 0)
       e.pod.children[1].scale.setScalar(Math.max(0.001, e.w)); e.m.tick?.(time)
       e.m.parts.forEach((o, i) => {

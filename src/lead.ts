@@ -88,11 +88,12 @@ function complete(n: number) {
   return true
 }
 function check(at = step) {
-  const d = data(), err = box!.querySelector('.err')!; let first: HTMLElement | null = null, msg = ''
+  const d = data(), err = box!.querySelector('.err')!; let first: HTMLElement | null = null, msg = '', n0 = 0
   for (const el of box!.querySelectorAll<HTMLElement>(`fieldset[data-step="${at}"] [data-need]`)) {
     const n = el.dataset.need!, v = String(d.get(n) ?? '').trim(), mail = n === 'email' && !!v && !mailOk(v), bad = !v || mail || (n === 'story' && v.length < 12)
-    el.classList.toggle('bad', bad); el.querySelectorAll('input,textarea').forEach(x => { x.setAttribute('aria-invalid', String(bad)); if (bad) x.setAttribute('aria-describedby', 'lead-err'); else x.removeAttribute('aria-describedby') }); if (bad && !first) { first = el; msg = mail ? L.mailErr : L.need }
+    el.classList.toggle('bad', bad); el.querySelectorAll('input,textarea').forEach(x => { x.setAttribute('aria-invalid', String(bad)); if (bad) x.setAttribute('aria-describedby', 'lead-err'); else x.removeAttribute('aria-describedby') }); if (bad) n0++; if (bad && !first) { first = el; msg = mail ? L.mailErr : L.need }
   }
+  if (n0 > 1) msg = L.needs
   err.textContent = msg; if (first) { (first.querySelector<HTMLElement>('input,textarea'))!.focus({ preventScroll: true }); first.scrollIntoView({ block: 'nearest' }) }
   return !first
 }
@@ -101,6 +102,8 @@ function brief(d: FormData) {
   const rows: [string, string][] = [['Request', ctx || 'Discovery'], ['Problem', en('problems', 'problem')], ['In their words', s('story')], ['Affects', d.getAll('impacts').map(i => form0.impacts.find(o => o.id === i)?.label.en).join(', ')], ['Users', en('sizes', 'size')], ['Runs at', en('places', 'place')], ['Route', en('routes', 'route')], ['Needed', en('timing', 'timing')], ['Budget', en('budgets', 'budget')], ['Role', en('roles', 'role')], ['Name', s('name')], ['Email', s('email')], ['Company', s('company')], ['Country', s('country')], ['Language', L.name]]
   return rows.map(r => `${r[0]}\n${r[1]}`).join('\n\n')
 }
+// Nothing typed is stored, so ask before a reload or a closed tab loses it
+addEventListener('beforeunload', e => { if (box?.open && far > 0 && !box.querySelector('.lead-done')) e.preventDefault() })
 async function finish() {
   const d = data(), s = (k: string) => String(d.get(k) ?? '').trim(), btn = box!.querySelector<HTMLButtonElement>('.lead-nav .btn')!, text = brief(d)
   // Changed answers are a new brief. The server answers a key it has already saved with the first one

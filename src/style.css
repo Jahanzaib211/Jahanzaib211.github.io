@@ -243,3 +243,15 @@ header nav>a:not(.btn){background:linear-gradient(currentColor,currentColor) no-
 @media(prefers-reduced-motion:reduce){header nav>a:not(.btn),.btn,.link,.ways .go,.posts .go{transition:none!important}}
 /* Articles and policies on paper */
 @media print{header,footer,.bg,#world,.wa,.consent,.toasts,.ask,.also,.skip{display:none!important}html,body,main,main *{background:none!important;color:#000!important}a[href^="http"]::after{content:" (" attr(href) ")"}main :is(h2,h3){break-after:avoid}}
+
+/* On a phone the privacy choice rests over the model at the top, so the words and the main button stay free */
+@media(max-width:900px) and (orientation:portrait){html:has(.hero,.story-top) .consent{top:88px;bottom:auto}}
+/* Short phones bring the main button up */
+@media(max-width:600px) and (max-height:700px) and (orientation:portrait){.hero{padding-top:calc(29svh - 30px)}.hero:has(.h-text){padding-top:min(300px,36svh)}.hero h1,.hero .h-text h1{font-size:34px}.hero p{margin:12px 0 18px;font-size:16px}}
+@media(max-width:600px) and (max-height:700px) and (orientation:portrait){.asking .hero:not(:has(.h-text)){padding-top:232px}}
+@media(max-width:340px){.hero h1,.hero .h-text h1{font-size:30px}}
+@media(min-width:901px) and (max-width:1799px){.hero .h-text h1{max-width:8.6em}:lang(en) .hero .h-text h1{max-width:8.2em}}
+@media(min-width:901px){.scene:not(.end){padding-block:7vh}.hero+.scene .say-big,.scene .say-big{padding-block:0}.scene:has(.say-big){min-height:68vh}}
+.opts small,.blk span button{font-size:14px}.doc[hidden]{display:none}.doc .rel{margin-top:22px}
+/* Without 3D there is no model to rest over, so the page makes room for the choice */
+@media(max-width:900px) and (orientation:portrait){.no3d.asking :is(.hero,.story-top){padding-top:250px!important}}

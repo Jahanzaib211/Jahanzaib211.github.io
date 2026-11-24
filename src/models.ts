@@ -40,23 +40,41 @@ function rack(h = 2.1, leds: Mesh[] = []) {
 const floor = (w: number, d: number, y: number) => { const g = grp(at(rb(w, 0.07, d, M.floor, 0.03), 0, y, 0)), l: [number, number, number, number, number, number][] = []; for (let i = 1; i < 6; i++) l.push([-w / 2 + (w * i) / 6, y + 0.037, 0, 0.008, 0.004, d - 0.06], [0, y + 0.037, -d / 2 + (d * i) / 6, w - 0.06, 0.004, 0.008]); g.add(inst(unit, M.steel, l)); return g }
 const blink = (leds: Mesh[]) => (t: number) => leds.forEach((l, i) => { l.visible = Math.sin(t * (2 + (i % 5)) + i * 2.3) > -0.55 })
 
-// Software being made: code is written, the product takes shape beside it, and each check passes
+// Software being made: written lines turn into light, the light becomes the product piece by piece, and each check passes
 function build(): Model {
-  const LINES = [[0, 30, 1], [1, 46, 0], [1, 34, 2], [2, 52, 0], [2, 40, 3], [2, 28, 1], [1, 22, 0], [1, 44, 2], [2, 36, 3], [2, 50, 0], [1, 26, 1], [0, 18, 0]], INK = [UI.dim, UI.c, '#7fb4ff', UI.g], STEPS = LINES.length + 6
-  const code = (n: number) => (c: Ctx) => { frame(c, 640, 480); rr(c, 0, 34, 52, 446, '#0a1f48', 0); LINES.forEach(([tab, w, ink], i) => { const y = 62 + i * 33; rr(c, 18, y + 2, 18, 8, '#2a4c8f', 4); if (i >= n) return; const x = 76 + tab * 34; rr(c, x, y, w * 3.2, 13, INK[ink], 6); rr(c, x + w * 3.2 + 12, y, 60 + ((i * 47) % 120), 13, '#35589f', 6) }); if (n < LINES.length) rr(c, 76 + LINES[n][0] * 34, 59 + n * 33, 4, 20, '#e9f1ff', 2) }
-  const app = (n: number) => (c: Ctx) => {
-    frame(c, 400, 520); const on = (k: number) => n >= k, box = (x: number, y: number, w: number, h: number, k: number, f: string) => { if (on(k)) rr(c, x, y, w, h, f, 10); else { c.strokeStyle = '#35589f'; c.lineWidth = 3; c.setLineDash([9, 8]); c.beginPath(); c.roundRect(x, y, w, h, 10); c.stroke(); c.setLineDash([]) } }
-    box(24, 58, 352, 52, 2, UI.b); box(24, 128, 168, 116, 4, '#12367a'); box(208, 128, 168, 116, 6, '#12367a'); box(24, 262, 352, 140, 8, '#0d2b63'); box(24, 420, 168, 64, 10, UI.c); box(208, 420, 168, 64, 11, '#12367a')
-    if (on(4)) { rr(c, 44, 152, 70, 12, UI.dim, 6); rr(c, 44, 182, 112, 30, UI.w, 8) } if (on(6)) { rr(c, 228, 152, 70, 12, UI.dim, 6); rr(c, 228, 182, 88, 30, UI.g, 8) } if (on(8)) [38, 66, 52, 88, 74, 104].forEach((h, i) => rr(c, 50 + i * 52, 388 - h, 30, h, i === 5 ? UI.c : UI.b, 6))
+  const LINES = [[0, 30, 1], [1, 46, 0], [1, 34, 2], [2, 52, 0], [2, 40, 3], [2, 28, 1], [1, 22, 0], [1, 44, 2], [2, 36, 3], [2, 50, 0], [1, 26, 1], [0, 18, 0]], INK = [UI.dim, UI.c, '#7fb4ff', UI.g], CYCLE = 13, WRITE = 7.5
+  const code = (n: number) => (c: Ctx) => { frame(c, 704, 480); rr(c, 0, 34, 52, 446, '#0a1f48', 0); if (n < LINES.length) rr(c, 52, 52 + n * 34, 652, 34, '#0e2a5e', 0); LINES.forEach(([tab, w, ink], i) => { const y = 62 + i * 34; rr(c, 18, y + 3, 18, 8, i < n ? '#3f6bb5' : '#1c3a75', 4); if (i >= n) return; const x = 78 + tab * 36; rr(c, x, y, w * 3.6, 14, INK[ink], 7); rr(c, x + w * 3.6 + 12, y, 70 + ((i * 47) % 130), 14, '#35589f', 7) }); if (n < LINES.length) rr(c, 78 + LINES[n][0] * 36, 58 + n * 34, 5, 22, '#e9f1ff', 2) }
+  const tx = canvas(704, 480, code(LINES.length)), face = new Mesh(new PlaneGeometry(3.02, 2.06), new MeshBasicMaterial({ map: tx.t })); face.position.z = 0.056
+  const edge = (w: number, h: number, z: number, m: Material, k = 0.02) => inst(unit, m, [[0, h / 2, z, w, k, k], [0, -h / 2, z, w, k, k], [w / 2, 0, z, k, h, k], [-w / 2, 0, z, k, h, k]])
+  const editor = grp(rb(3.14, 2.18, 0.1, M.dark, 0.06), face, edge(3.14, 2.18, 0.05, M.blue)); editor.rotation.y = 0.16
+  // The product, in solid pieces
+  const card = std(0x1b4fa8, { emissive: 0x0a2d73, emissiveIntensity: 0.7, metalness: 0.2 }), W = 1.62, H = 2.2, app = grp(rb(W, H, 0.12, std(0x0b1c40, { metalness: 0.3 }), 0.07), edge(W, H, 0.06, M.cyan, 0.024)); app.rotation.y = -0.2
+  const piece = (w: number, h: number, x: number, y: number, m: Material, ...more: Object3D[]) => { const g = grp(rb(w, h, 0.1, m, 0.04), ...more); g.position.set(x, y, 0.12); app.add(g); return g }
+  const row = (w: number, x: number, y: number, m: Material) => at(rb(w, 0.06, 0.03, m, 0.015), x, y, 0.06)
+  const pieces = [piece(1.4, 0.24, 0, 0.88, M.blue, row(0.42, -0.4, 0, M.white), at(cy(0.05, 0.03, M.white, 20), 0.56, 0, 0.06)), piece(0.66, 0.52, -0.37, 0.44, card, row(0.3, -0.12, 0.13, M.pale), row(0.46, -0.04, -0.06, M.white)), piece(0.66, 0.52, 0.37, 0.44, card, row(0.3, -0.12, 0.13, M.pale), row(0.4, -0.07, -0.06, M.ok)), piece(1.4, 0.74, 0, -0.24, card), piece(0.66, 0.24, -0.37, -0.82, M.cyan, row(0.3, 0, 0, M.white)), piece(0.66, 0.24, 0.37, -0.82, card, row(0.3, 0, 0, M.pale))]
+  ;(pieces[0].children[2] as Mesh).rotation.x = Math.PI / 2
+  const tall = [0.2, 0.36, 0.28, 0.46, 0.4, 0.58], chart = tall.map((h, i) => { const b = grp(at(rb(0.13, 1, 0.1, i === 5 ? M.cyan : M.blue, 0.02), 0, 0.5, 0)); b.position.set(-0.5 + i * 0.2, -0.31, 0.06); b.scale.y = h; pieces[3].add(b); return b })
+  // Light travels from the written lines into the product
+  const paths = [0.55, 0.15, -0.25, -0.6].map((y, i) => new CatmullRomCurve3([new Vector3(-0.1, 0.35 + y, -0.35), new Vector3(0.35, 0.6 + y * 0.8, 0.5 + i * 0.1), new Vector3(0.85, 0.3 + y * 0.7, 0.95), new Vector3(1.2, -0.1 + y * 0.8, 0.75)]))
+  const haze = new MeshBasicMaterial({ color: 0x04d8fa, transparent: true, opacity: 0.22, blending: AdditiveBlending, depthWrite: false }), lines = grp(...paths.map(p => new Mesh(new TubeGeometry(p, 40, 0.008, 6), haze)))
+  const N = 32, sparks = inst(new SphereGeometry(0.032, 10, 10), M.cyan, Array.from({ length: N }, () => [0, 0, 0] as [number, number, number])), o = new Object3D(), v = new Vector3()
+  // Four checks on the base
+  const rings: Mesh[] = [], nodes: Mesh[] = [], fill = at(bx(1, 0.03, 0.05, M.ok), 0, 0.005, 0), track = grp(at(bx(2.7, 0.025, 0.04, M.steel), 0, 0, 0), fill)
+  for (let i = 0; i < 4; i++) { const x = -1.35 + i * 0.9, n = at(new Mesh(new SphereGeometry(0.105, 24, 24), M.ok), x, 0.05, 0), r = at(new Mesh(new TorusGeometry(0.2, 0.014, 8, 40), M.ok), x, 0, 0); r.rotation.x = Math.PI / 2; nodes.push(n); rings.push(r); track.add(n, r) }
+  const base = grp(rb(3.9, 0.12, 2.5, M.floor, 0.06), at(inst(unit, M.blue, [[0, 0, 1.25, 3.8, 0.03, 0.02], [0, 0, -1.25, 3.8, 0.03, 0.02], [1.95, 0, 0, 0.02, 0.03, 2.4], [-1.95, 0, 0, 0.02, 0.03, 2.4]]), 0, 0.05, 0))
+  const m = model([at(base, 0, -1.72, 0), at(editor, -0.5, 0.2, -0.6), at(app, 1.08, -0.35, 0.5), at(track, -0.1, -1.6, 0.98), lines, sparks], 0.17, -0.3, 1.08)
+  const ease = (k: number) => 1 - (1 - k) ** 3, part = (c: number, from: number, len: number) => Math.min(1, Math.max(0, (c - from) / len)); let was = -1
+  // Standing still shows the finished work
+  m.tick = t => {
+    const c = t === 0 ? CYCLE - 2 : t % CYCLE, out = part(c, CYCLE - 0.9, 0.9), n = out ? 0 : Math.min(LINES.length, Math.floor((c / WRITE) * (LINES.length + 1)))
+    if (n !== was) { was = n; tx.redraw(code(n)) }
+    pieces.forEach((g, i) => { const k = ease(part(c, 0.9 + i * 1.05, 1.1)) * (1 - out); g.position.z = 0.12 + (1 - k) * 0.9; g.scale.setScalar(Math.max(0.001, k)) })
+    chart.forEach((b, i) => { b.scale.y = Math.max(0.001, tall[i] * ease(part(c, 4.7 + i * 0.16, 0.8))) })
+    const live = part(c, 0.6, 0.6) * (1 - part(c, WRITE - 0.2, 0.8)); haze.opacity = 0.05 + 0.2 * live
+    for (let i = 0; i < N; i++) { const k = (t * 0.42 + i / N + (i % 4) * 0.13) % 1; paths[i % 4].getPoint(k, v); o.position.copy(v); o.scale.setScalar(Math.max(0.0001, Math.sin(k * Math.PI) * live)); o.updateMatrix(); sparks.setMatrixAt(i, o.matrix) } sparks.instanceMatrix.needsUpdate = true
+    const go = part(c, WRITE, 2.6) * (1 - out); fill.scale.x = Math.max(0.001, go * 2.7); fill.position.x = -1.35 + (go * 2.7) / 2
+    nodes.forEach((x, i) => { const d = go >= (i + 0.02) / 3.02 && go > 0, now = part(c, WRITE + (i / 3) * 2.6, 0.7); x.material = rings[i].material = d ? M.ok : M.steel; rings[i].scale.setScalar(d ? 1 + Math.sin(now * Math.PI) * 0.45 : 1) })
   }
-  const A = canvas(640, 480, code(LINES.length)), B = canvas(400, 520, app(LINES.length)), pane = (w: number, h: number, t: CanvasTexture) => { const p = new Mesh(new PlaneGeometry(w - 0.1, h - 0.1), new MeshBasicMaterial({ map: t })); p.position.z = 0.056; return grp(rb(w, h, 0.1, M.steel, 0.06), p) }
-  const editor = pane(2.7, 2.05, A.t), screen = pane(1.42, 1.84, B.t), nodes: Mesh[] = [], rail = bx(2.5, 0.03, 0.06, M.steel)
-  editor.rotation.y = 0.1; screen.rotation.y = -0.14
-  const track = grp(rail); for (let i = 0; i < 4; i++) { const n = new Mesh(new SphereGeometry(0.1, 24, 24), M.ok); n.position.set(-1.2 + i * 0.8, 0.05, 0); nodes.push(n); track.add(n, at(cy(0.17, 0.05, M.dark), -1.2 + i * 0.8, -0.02, 0)) }
-  const m = model([at(rb(3.5, 0.12, 2.3, M.floor), 0, -1.6, 0), at(editor, -0.4, 0.05, -0.5), at(screen, 1.0, -0.42, 0.45), at(track, 0, -1.48, 0.95), at(bx(0.5, 0.5, 0.3, M.dark), -0.4, -1.28, -0.5)], 0.16, -0.28, 1.02)
-  let was = -1
-  // Four checks pass at the end, then the next change begins. Standing still shows the finished work
-  m.tick = t => { const n = t === 0 ? STEPS : Math.floor((t * 2.2) % (STEPS + 5)); if (n === was) return; was = n; A.redraw(code(Math.min(n, LINES.length))); B.redraw(app(n)); nodes.forEach((o, i) => { o.material = n > LINES.length + i ? M.ok : n === LINES.length + i ? M.amber : M.steel }) }
   return m
 }
 function padlock(k = 1) {

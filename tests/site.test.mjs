@@ -145,7 +145,7 @@ test('with reduced motion the model follows a choice', async () => {
 test('a missing file after a release reloads once, not forever', async () => {
   const p = await open(''); await ready(p); let loads = 0; p.on('load', () => loads++)
   missing = globSync('assets/lead-*.js', { cwd: DIST })[0]
-  try { await p.locator('header [data-lead]').click(); await p.waitForTimeout(2500); assert.equal(loads, 1); await p.locator('header [data-lead]').click(); await p.waitForURL('**/contact/') } finally { missing = '' }
+  try { await Promise.all([p.waitForEvent('load', { timeout: 15000 }), p.locator('header [data-lead]').click()]); await p.waitForTimeout(1500); assert.equal(loads, 1); await p.locator('header [data-lead]').click(); await p.waitForURL('**/contact/') } finally { missing = '' }
   await p.context().close()
 }, true)
 test('no cookies, no local storage and no third party requests', async () => {
@@ -184,6 +184,20 @@ test('the consent bar never covers the main button of a page', async () => {
   const bad = []
   for (const x of ['', 'services/', 'products/', 'ar/', 'ur/company/', 'zh/']) { const p = await open(x, { ask: true }); const b = await p.locator('.hero .btn').boundingBox(), c = await p.locator('.consent').boundingBox(); if (b.y + b.height > c.y) bad.push([x, b.y + b.height, c.y]); await p.context().close() }
   assert.deepEqual(bad, [])
+})
+for (const flat of [false, true]) test(`on a phone ${flat ? 'without 3D ' : ''}the privacy choice leaves the words and the main button free`, async () => {
+  const bad = []
+  for (const [w, h] of [[360, 640], [360, 740], [390, 844], [412, 915]]) for (const x of ['', 'services/', 'solutions/', 'products/', 'products/nova.html', 'solutions/team-chat/', 'ar/', 'ar/services/', 'ur/', 'ur/company/', 'zh/']) {
+    const c = await browser.newContext({ viewport: { width: w, height: h } }); if (flat) await c.addInitScript(() => { HTMLCanvasElement.prototype.getContext = () => null }); await c.route(u => u.hostname !== '127.0.0.1', r => r.abort()); const p = await c.newPage(); await p.goto(base + x); await p.locator('.consent').waitFor(); if (flat) await p.waitForFunction(() => document.documentElement.classList.contains('no3d'))
+    const r = await p.evaluate(() => { const b = e => document.querySelector(e).getBoundingClientRect(), k = b('.consent'); return { title: b('h1').top - k.bottom, button: b('main .btn').top - k.bottom, top: k.top - b('header').bottom } }); if (r.title < 0 || r.button < 0 || r.top < 0) bad.push([w, h, x, r]); await c.close()
+  }
+  assert.deepEqual(bad, [])
+})
+test('a not found page speaks the language of its address', async () => {
+  for (const [l, dir] of [['ar', 'rtl'], ['ur', 'rtl'], ['zh', '']]) { const p = await open(`${l}/nothing-here`); assert.equal(await p.locator('[data-404]:visible').count(), 1); assert.equal(await p.locator('[data-404]:visible').getAttribute('lang'), l); assert.equal(await p.locator('[data-404]:visible').evaluate(e => e.dir), dir); await p.context().close() }
+})
+test('leaving with an unfinished brief is asked about first', async () => {
+  const p = await open('products/'); let asked = 0; p.on('dialog', d => { asked++; d.accept() }); await toStep(p, 2); await p.reload(); assert.equal(asked, 1); await p.reload(); assert.equal(asked, 1); await p.context().close()
 })
 test('the background moves, and is a still picture when less motion is asked for', async () => {
   for (const [m, moves] of [['no-preference', true], ['reduce', false]]) { const p = await open('insights/', { reducedMotion: m }); await p.locator('.bg.on').waitFor({ state: 'attached', timeout: 8000 }); await p.waitForTimeout(1500); const n = () => p.evaluate(() => Number(document.querySelector('.bg canvas').dataset.frames)), a = await n(); await p.waitForTimeout(1200); assert.equal(await n() > a, moves, m); assert.deepEqual(p.errors, []); await p.context().close() }
