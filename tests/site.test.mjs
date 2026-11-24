@@ -239,3 +239,14 @@ test('every internal link and file exists', () => {
   for (const f of PAGES) for (const m of readFileSync(join(DIST, f), 'utf8').matchAll(/\s(?:href|src|data-u)="(\/[^"]*)"/g)) { n++; const path = decodeURIComponent(m[1].split(/[?#]/)[0]), file = join(DIST, path.endsWith('/') ? path + 'index.html' : path); if (!existsSync(file) || statSync(file).isDirectory()) bad.add(`${f} ${path}`) }
   assert.ok(n > 5000); assert.deepEqual([...bad], [])
 })
+test('the client space is linked everywhere, private, and never counts a visit', async () => {
+  const h = readFileSync(join(DIST, 'client/index.html'), 'utf8'); assert.match(h, /noindex, nofollow/); assert.ok(!h.includes('google')); assert.ok(!readFileSync(join(DIST, 'sitemap.xml'), 'utf8').includes('/client/'))
+  for (const f of PAGES) assert.equal((readFileSync(join(DIST, f), 'utf8').match(/href="\/client\/"/g) ?? []).length, 2, f)
+  const c = await browser.newContext(), p = await c.newPage(), calls = [], errors = []; p.on('pageerror', e => errors.push(e.message))
+  await c.addCookies([{ name: 'alx_consent', value: '2.yes', url: base }])
+  await c.route(u => u.hostname !== '127.0.0.1', r => { calls.push(r.request().method() + ' ' + new URL(r.request().url()).pathname); const o = { 'access-control-allow-origin': base.replace(/\/$/, ''), 'access-control-allow-credentials': 'true', 'access-control-allow-headers': 'content-type, x-csrf' }; return r.request().method() === 'OPTIONS' ? r.fulfill({ status: 204, headers: o }) : r.fulfill({ status: 401, headers: o, contentType: 'application/json', body: '{"code":"signed_out","message":"Please sign in."}' }) })
+  await p.goto(base + 'client/'); await p.getByRole('heading', { name: 'Client sign in' }).waitFor(); await p.waitForTimeout(800)
+  assert.deepEqual([...new Set(calls)], ['GET /api/public/client/me']); assert.equal(await p.locator('.consent').count(), 0)
+  await p.goto(base); await p.goto(base + 'client/#/join/' + 'a'.repeat(43)); await p.getByRole('heading', { name: 'Welcome' }).waitFor(); assert.equal(await p.evaluate(() => location.hash), '')
+  await p.setViewportSize({ width: 360, height: 640 }); assert.ok(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth)); assert.deepEqual(errors, []); await c.close()
+})

@@ -1,6 +1,6 @@
 export default {
 name:'English',dir:'ltr',skip:'Skip to content',menu:'Menu',close:'Close',lang:'Language',
-nav:['Solutions','Services','Products','Approach','Company'],contact:'Contact us',
+client:'Client sign in',nav:['Solutions','Services','Products','Approach','Company'],contact:'Contact us',
 title:'ALI LABS X, technology engineered around you',desc:'ALI LABS X designs and builds software, private AI and infrastructure that organizations can own. You define the problem. We engineer the solution.',
 h1:'Technology, engineered around you.',hero:'You define the problem. We engineer software, private AI and infrastructure that your organization can own, operate and evolve.',start:'Start a project',disc:'Discover our solutions',
 story:[['Build','Reliable software and thoughtful architecture, engineered around real operational problems. Our work begins with your challenge.'],['Own','Keep control of your technology, infrastructure and data, with deployment choices that fit your organization.'],['Innovate','Apply emerging technology with intent, where it creates clear and practical value.']],

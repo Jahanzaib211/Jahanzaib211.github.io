@@ -255,3 +255,7 @@ header nav>a:not(.btn){background:linear-gradient(currentColor,currentColor) no-
 .opts small,.blk span button{font-size:14px}.doc[hidden]{display:none}.doc .rel{margin-top:22px}
 /* Without 3D there is no model to rest over, so the page makes room for the choice */
 @media(max-width:900px) and (orientation:portrait){.no3d.asking :is(.hero,.story-top){padding-top:250px!important}}
+
+/* Client space link and page */
+@media(min-width:901px) and (max-width:1320px){header .client-in{display:none}}
+[data-client] [data-consent],[data-client] .wa{display:none}
