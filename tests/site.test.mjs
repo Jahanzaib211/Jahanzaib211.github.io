@@ -103,6 +103,19 @@ test('a brief that could not be sent stays and can be sent again', async () => {
   await p.locator('.lead-x').first().click(); await p.locator('header [data-lead]').click(); await p.locator('.lead-box[open]').waitFor()
   assert.equal(await p.locator('#l-story').inputValue(), 'A long enough description of the problem.'); assert.equal(new Set(keys).size, 1); assert.equal(keys.length, 2); await p.context().close()
 })
+test('a later step cannot be reached or sent past an answer that was taken back', async () => {
+  const p = await open('products/'); let sends = 0; await p.context().route('**/api/public/leads', r => { sends++; return r.abort() })
+  await toStep(p, 5); const to = n => p.locator(`.lead-steps [data-go="${n}"]`).click()
+  await to(4); await p.locator('[name=consent]').uncheck(); await to(5); assert.ok(await p.locator('[data-step="4"]').isVisible(), 'consent')
+  await p.locator('[name=consent]').check(); await p.fill('#l-email', 'broken'); await to(5); assert.ok(await p.locator('[data-step="4"]').isVisible(), 'email')
+  await p.fill('#l-email', 'a@example.com'); await to(1); await p.fill('#l-story', ''); await to(5); assert.ok(await p.locator('[data-step="1"]').isVisible(), 'story'); assert.equal(sends, 0); await p.context().close()
+})
+test('a brief changed after a failed send gets a new key', async () => {
+  const p = await open('products/'), keys = []; await p.context().route('**/api/public/leads', r => { if (r.request().method() === 'POST') keys.push(r.request().postDataJSON().idempotencyKey); return r.abort() })
+  await toStep(p, 5); const send = async () => { await p.locator('.lead-nav .btn').click(); await p.locator('.lead-done').waitFor() }
+  await send(); await p.locator('.lead-done .again').click(); await p.locator('.lead-steps [data-go="1"]').click(); await p.fill('#l-story', 'A corrected description of the problem.'); await p.locator('.lead-steps [data-go="5"]').click(); await send()
+  assert.equal(keys.length, 2); assert.notEqual(keys[0], keys[1]); await p.context().close()
+})
 test('Contact us works on the not found page and never locks scrolling', async () => {
   const p = await open('404.html')
   for (let i = 0; i < 2; i++) { await p.locator('header [data-lead]').click(); await p.locator('.lead-box[open]').waitFor({ timeout: 5000 }); await p.locator('.lead-x').first().click(); await p.waitForTimeout(300); assert.equal(await p.evaluate(() => document.documentElement.style.overflow), '') }

@@ -10,7 +10,7 @@ type Form = { version: number; steps: { title: Record<Lang, string>; hint: Recor
 const L: T = JSON.parse(document.getElementById('lead-text')?.textContent ?? '{}')
 const lang = (document.documentElement.lang.slice(0, 2) as Lang) in { en: 1, ar: 1, ur: 1, zh: 1 } ? (document.documentElement.lang.slice(0, 2) as Lang) : 'en'
 const API = (import.meta.env.VITE_LEAD_API as string | undefined) ?? 'https://novaops.alilabsx.com/api/public'
-let form0 = bundled as unknown as Form, key = '', opened = 0
+let form0 = bundled as unknown as Form, key = '', sent = '', opened = 0
 const valid = (f: any): f is Form => Array.isArray(f?.steps) && f.steps.length === 5 && ['problems', 'impacts', 'sizes', 'places', 'routes', 'timing', 'budgets', 'roles'].every(g => Array.isArray(f[g]) && f[g].length > 1 && f[g].every((o: any) => typeof o?.id === 'string' && typeof o?.label?.[lang] === 'string')) && typeof f.questions?.story?.[lang] === 'string'
 // The live form is used when it answers quickly; otherwise the copy shipped with the site.
 const ready = fetch(`${API}/form`, { signal: AbortSignal.timeout(2500) }).then(r => r.json()).then(f => { if (valid(f)) form0 = f }).catch(() => {})
@@ -47,7 +47,7 @@ function make() {
   story.addEventListener('input', grow); grow()
   box.querySelector('.lead-x')!.addEventListener('click', () => box!.close())
   box.querySelector('.back')!.addEventListener('click', () => { step--; draw() })
-  box.addEventListener('click', e => { const b = (e.target as HTMLElement).closest<HTMLElement>('[data-go]'); if (b && +b.dataset.go! <= far && !box!.querySelector('.lead-done')) { step = +b.dataset.go!; draw() } })
+  box.addEventListener('click', e => { const b = (e.target as HTMLElement).closest<HTMLElement>('[data-go]'); if (!b || +b.dataset.go! > far || box!.querySelector('.lead-done')) return; const n = +b.dataset.go!; if (n < step || complete(n)) { step = n; draw() } })
   // Choosing with a pointer moves on by itself when the step has one question
   let pointer = false; f.addEventListener('pointerdown', () => { pointer = true }); f.addEventListener('keydown', () => { pointer = false })
   f.addEventListener('change', e => {
@@ -64,7 +64,7 @@ function make() {
 const form = () => box!.querySelector('form')!, data = () => new FormData(form()), mailOk = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim())
 function advance() {
   if (!check()) return
-  if (step === LAST) { void finish(); return }
+  if (step === LAST) { if (complete(LAST)) void finish(); return }
   step++; const fresh = step > far; far = Math.max(far, step); draw(); if (fresh) track('form_step'); if (fresh) toast({ kind: 'ok', text: L['t' + step], ms: 2600 })
 }
 function summary() {
@@ -82,9 +82,14 @@ function draw() {
   box!.querySelector('.lead-nav .btn')!.textContent = step < LAST ? L.next : L.send; box!.querySelector('.err')!.textContent = ''
   box!.setAttribute('aria-labelledby', `lead-t${step}`); box!.scrollTop = 0; form().scrollTop = 0; box!.querySelector<HTMLElement>(`#lead-t${step}`)!.focus({ preventScroll: true }); summary()
 }
-function check() {
+// Every step before n must be answered. Otherwise the first one that is not is shown
+function complete(n: number) {
+  for (let i = 0; i < n; i++) if (!check(i)) { step = i; draw(); check(); return false }
+  return true
+}
+function check(at = step) {
   const d = data(), err = box!.querySelector('.err')!; let first: HTMLElement | null = null, msg = ''
-  for (const el of box!.querySelectorAll<HTMLElement>(`fieldset[data-step="${step}"] [data-need]`)) {
+  for (const el of box!.querySelectorAll<HTMLElement>(`fieldset[data-step="${at}"] [data-need]`)) {
     const n = el.dataset.need!, v = String(d.get(n) ?? '').trim(), mail = n === 'email' && !!v && !mailOk(v), bad = !v || mail || (n === 'story' && v.length < 12)
     el.classList.toggle('bad', bad); el.querySelectorAll('input,textarea').forEach(x => x.setAttribute('aria-invalid', String(bad))); if (bad && !first) { first = el; msg = mail ? L.mailErr : L.need }
   }
@@ -98,7 +103,9 @@ function brief(d: FormData) {
 }
 async function finish() {
   const d = data(), s = (k: string) => String(d.get(k) ?? '').trim(), btn = box!.querySelector<HTMLButtonElement>('.lead-nav .btn')!, text = brief(d)
-  const payload = { idempotencyKey: key, formVersion: form0.version, language: lang, request: ctx.slice(0, 80), problem: s('problem'), story: s('story'), impacts: d.getAll('impacts').map(String), size: s('size'), place: s('place'), route: s('route'), timing: s('timing'), budget: s('budget'), role: s('role'), name: s('name'), email: s('email'), company: s('company'), country: s('country'), consent: true, elapsedMs: Math.round(performance.now() - opened), website: s('website') }
+  // Changed answers are a new brief. The server answers a key it has already saved with the first one
+  const same = JSON.stringify([ctx, ...d]); if (sent && sent !== same) key = crypto.randomUUID(); sent = same
+  const payload = { idempotencyKey: key, formVersion: form0.version, language: lang, request: ctx.slice(0, 80), problem: s('problem'), story: s('story'), impacts: d.getAll('impacts').map(String), size: s('size'), place: s('place'), route: s('route'), timing: s('timing'), budget: s('budget'), role: s('role'), name: s('name'), email: s('email'), company: s('company'), country: s('country'), consent: d.has('consent'), elapsedMs: Math.round(performance.now() - opened), website: s('website') }
   btn.disabled = true; btn.textContent = L.sending; let ref = ''
   try { const r = await fetch(`${API}/leads`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal: AbortSignal.timeout(12000) }); if (r.ok) ref = String((await r.json()).reference ?? '') } catch { /* offered by email below */ }
   btn.disabled = false; btn.textContent = L.send
@@ -117,7 +124,7 @@ async function finish() {
 function reopen() { box!.querySelector('.lead-done')?.remove(); box!.classList.remove('finished') }
 export async function openLead(context: string, solution: number | null, opener: HTMLElement, resume = false) {
   await Promise.race([ready, new Promise(r => setTimeout(r, 900))])
-  if (!box || box.querySelector('.lead-done.sent')) { box?.remove(); try { make() } catch (e) { box?.remove(); box = null; throw e } key = crypto.randomUUID(); opened = performance.now(); step = 0 }
+  if (!box || box.querySelector('.lead-done.sent')) { box?.remove(); try { make() } catch (e) { box?.remove(); box = null; throw e } key = crypto.randomUUID(); sent = ''; opened = performance.now(); step = 0 }
   if (box!.open) return
   reopen()
   ctx = context; from = opener; formOpened(); track('form_open'); clearToasts()
