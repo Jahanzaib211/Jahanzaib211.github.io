@@ -253,3 +253,5 @@ header nav>a:not(.btn){background:linear-gradient(currentColor,currentColor) no-
 @media(min-width:901px) and (max-width:1799px){.hero .h-text h1{max-width:8.6em}:lang(en) .hero .h-text h1{max-width:8.2em}}
 @media(min-width:901px){.scene:not(.end){padding-block:7vh}.hero+.scene .say-big,.scene .say-big{padding-block:0}.scene:has(.say-big){min-height:68vh}}
 .opts small,.blk span button{font-size:14px}.doc[hidden]{display:none}.doc .rel{margin-top:22px}
+/* Without 3D there is no model to rest over, so the page makes room for the choice */
+@media(max-width:900px) and (orientation:portrait){.no3d.asking :is(.hero,.story-top){padding-top:250px!important}}
