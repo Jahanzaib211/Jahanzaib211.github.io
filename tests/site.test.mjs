@@ -118,7 +118,7 @@ test('a brief changed after a failed send gets a new key', async () => {
 })
 test('Contact us works on the not found page and never locks scrolling', async () => {
   const p = await open('404.html')
-  for (let i = 0; i < 2; i++) { await p.locator('header [data-lead]').click(); await p.locator('.lead-box[open]').waitFor({ timeout: 5000 }); await p.locator('.lead-x').first().click(); await p.waitForTimeout(300); assert.equal(await p.evaluate(() => document.documentElement.style.overflow), '') }
+  for (let i = 0; i < 2; i++) { await p.locator('header [data-lead]').click(); await p.locator('.lead-box[open]').waitFor({ timeout: 5000 }); await p.locator('.lead-x').first().click(); await p.waitForFunction(() => document.documentElement.style.overflow === '', null, { timeout: 5000 }) }
   assert.deepEqual(p.errors, []); await p.context().close()
 })
 test('keyboard focus is visible on main buttons', async () => {

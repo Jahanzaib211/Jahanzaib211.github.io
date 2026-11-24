@@ -7,7 +7,7 @@
 - Company and policy pages in Arabic, Urdu and Chinese
 - Security policy in every page, protection against framing
 - Form no longer jumps, an unsent brief is kept, models return after a graphics loss
-- The Build model shows code becoming a product piece by piece, then passing its checks
+- The Build model is a software stack, where servers carry the code and the code carries the product
 - The privacy choice leaves the main button free on phones, the not found page speaks four languages, and an unfinished brief is asked about before leaving
 - Quiet pointer feedback, clearer contrast, keyboard order and form messages, a print layout, and a header that fits from 901 px
 - The form checks every step again before it is sent, and changed answers are never lost after a failed send

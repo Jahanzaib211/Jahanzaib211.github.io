@@ -14,15 +14,15 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
       - run: npm ci --no-fund --no-audit
       - run: npm run build
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: dist
   # A separate job, so the uploaded site is listed before it is asked for
@@ -34,8 +34,8 @@ jobs:
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - id: deploy
-        uses: actions/deploy-pages@v4
-      - uses: actions/checkout@v4
+        uses: actions/deploy-pages@v5
+      - uses: actions/checkout@v7
       - name: Tell search engines about the new pages
         continue-on-error: true
         run: |
