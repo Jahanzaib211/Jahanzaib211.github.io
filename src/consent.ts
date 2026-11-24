@@ -47,7 +47,8 @@ function show(focus: boolean) {
     const was = read(); write(v); box!.remove(); box = null; document.documentElement.classList.remove('asking'); if (focus) from?.focus()
     if (v === 'no') stopGoogle(); else if (was !== 'yes') track('page_view')
   })
-  document.body.append(box); document.documentElement.classList.add('asking'); if (focus) box.querySelector<HTMLElement>('h2')!.focus()
+  // Right after the skip link, so the keyboard reaches the choice before the page
+  const skip = document.querySelector('.skip'); if (skip) skip.after(box); else document.body.prepend(box); document.documentElement.classList.add('asking'); if (focus) box.querySelector<HTMLElement>('h2')!.focus()
 }
 export function startConsent() {
   document.addEventListener('click', e => {
