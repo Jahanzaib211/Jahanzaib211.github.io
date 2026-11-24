@@ -222,3 +222,6 @@ footer .wrap{display:grid}.f-top{grid-template-columns:minmax(220px,1.1fr) minma
 @media(min-width:1800px){footer,.f-top nav,.f-top nav>b{font-size:17px}.f-base,.f-base nav{font-size:15px}}
 [dir=rtl] .f-top nav a[dir=ltr]{text-align:right}
 .framed body{display:none}
+/* Without 3D the mark takes the model's place beside the words, so the buttons keep theirs */
+@media(min-width:901px){.no3d .hero{min-height:calc(100svh - 77px)}.no3d .hero>.wrap{position:relative}.no3d .flat{position:absolute;inset-inline-end:0;top:50%;translate:0 -50%;width:min(38%,460px);margin:0}.no3d .hero .h-text{max-width:56%}}
+@media(min-width:901px) and (max-height:800px){.hero h1{font-size:clamp(40px,min(6.3vw,10.500vh),80px)}.hero p{margin:18px 0 26px}.asking .hero{padding-block:24px 132px}}
