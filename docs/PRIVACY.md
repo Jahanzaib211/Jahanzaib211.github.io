@@ -8,3 +8,4 @@ The public text is in `content/cookies.part.html`, `privacy.part.html` and `page
 - Google Analytics `G-612W223T3P` loads once. Do not add the Tag Manager container `GTM-NZKD7T8C` too. It holds the same stream.
 - Advertising and user data are denied in code. Keep Google signals and user-provided data off in the Google account.
 - The address sent to Google leaves out the query string.
+- The client space (`/client/`) loads no analytics. Its session cookie `__Secure-alx_client` belongs to novaops.alilabsx.com, path `/api/public/client`.

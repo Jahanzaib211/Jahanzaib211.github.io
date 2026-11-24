@@ -8,8 +8,10 @@ let framed = false; try { framed = window.top !== window.self && window.top!.loc
 if (framed) { root.classList.add('framed'); document.body.inert = true; addEventListener('click', e => { e.preventDefault(); e.stopImmediatePropagation() }, true) }
 const menu = document.querySelector<HTMLButtonElement>('.menu')!, nav = document.getElementById('nav')!
 const set = (o: boolean) => { nav.classList.toggle('open', o); menu.setAttribute('aria-expanded', String(o)); menu.textContent = o ? menu.dataset.close! : menu.dataset.open! }
-if (document.getElementById('lead-text')) startAssist()
-startConsent()
+// The client space is private. Nothing is counted or suggested there
+const client = root.hasAttribute('data-client')
+if (!client && document.getElementById('lead-text')) startAssist()
+if (!client) startConsent()
 menu.addEventListener('click', () => set(!nav.classList.contains('open')))
 nav.addEventListener('click', e => { if ((e.target as HTMLElement).closest('a')) set(false) })
 const lang = document.querySelector<HTMLDetailsElement>('.lang')
