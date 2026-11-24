@@ -89,7 +89,7 @@ export function createWorld(canvas: HTMLCanvasElement, reduced: boolean): World 
       const pin = s.el.querySelector<HTMLElement>('[data-pin]')
       if (wide && pin) { const q = pin.getBoundingClientRect(), want = (q.top + q.bottom) / 2 - box.top; hold += (want - (hold || want)) * k1; if (!hold) hold = want; c = box.top + hold; c = Math.min(Math.max(c, Math.min(vh * 0.4, box.top + box.height)), Math.max(vh * 0.62, box.top + vh * 0.3)) }
       else if (wide) { const q = s.text.getBoundingClientRect(), half = Math.min(q.height / 2, vh * 0.36); c = Math.min(Math.max(vh / 2, q.top + half), q.bottom - half) }
-      else c = box.top + Math.min(vh * 0.3, 270) + (s.el.classList.contains('story-top') ? 0 : 30)
+      else c = box.top + Math.min(vh * 0.3, 270) + (s.el.matches('.story-top,.hero') ? 0 : -30)
       placed.set(name, { y: (vh / 2 - c) * unit, side: s.side, on: c > -vh * 0.2 && c < vh * 1.12 }); if (Math.abs(c - vh / 2) < vh * 1.4) get(name)
     }
     const isLogo = !!logo?.on

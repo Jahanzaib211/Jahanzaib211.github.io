@@ -3,6 +3,9 @@ import { startAssist } from './assist'
 import { startConsent } from './consent'
 import { startDemos, attach } from './demos'
 const root = document.documentElement; root.classList.add('js')
+// Another site must not show this page inside its own and steal clicks. GitHub Pages cannot send the header that stops it
+let framed = false; try { framed = window.top !== window.self && window.top!.location.origin !== location.origin } catch { framed = true }
+if (framed) { root.classList.add('framed'); document.body.inert = true; addEventListener('click', e => { e.preventDefault(); e.stopImmediatePropagation() }, true) }
 const menu = document.querySelector<HTMLButtonElement>('.menu')!, nav = document.getElementById('nav')!
 const set = (o: boolean) => { nav.classList.toggle('open', o); menu.setAttribute('aria-expanded', String(o)); menu.textContent = o ? menu.dataset.close! : menu.dataset.open! }
 if (document.getElementById('lead-text')) startAssist()
@@ -15,6 +18,7 @@ addEventListener('keydown', e => { if (e.key === 'Escape' && lang?.open) { lang.
 // A page kept by the browser must not come back with its menus open
 addEventListener('pagehide', () => { if (lang) lang.open = false; set(false) })
 // After a new release an open page can ask for a file that is gone. Load the new page once, never over a form
+const home = document.querySelector<HTMLAnchorElement>('.logo')!.pathname
 let reloading = false
 addEventListener('vite:preloadError', () => {
   try { if (document.querySelector('dialog[open]') || sessionStorage.getItem('alx-reload')) return; sessionStorage.setItem('alx-reload', '1') } catch { return }
@@ -35,13 +39,16 @@ if (canvas) {
   if (!gl) off(); else if (document.readyState === 'complete') go(); else addEventListener('load', go, { once: true })
 }
 
+const sky = document.querySelector<HTMLCanvasElement>('.bg canvas')
+if (sky) { const run = () => import('./backdrop').then(m => m.startBackdrop(sky)).catch(() => {}); 'requestIdleCallback' in window ? requestIdleCallback(run, { timeout: 900 }) : setTimeout(run, 120) }
+
 // Discovery form opens from every call to action; without JavaScript the links are plain email links
 document.addEventListener('click', e => {
   const a = (e.target as HTMLElement).closest<HTMLElement>('[data-lead]')
   if (!a || !('showModal' in HTMLDialogElement.prototype)) return
   e.preventDefault()
   const sol = a.dataset.lead === 'sol' ? Number(a.dataset.sol ?? document.querySelector<HTMLInputElement>('[name=sol]:checked')?.value ?? 0) : null
-  import('./lead').then(m => m.openLead(sol === null ? a.dataset.lead! : 'Solution', sol, a)).catch(() => { if (!reloading) location.href = '/contact/' })
+  import('./lead').then(m => m.openLead(sol === null ? a.dataset.lead! : 'Solution', sol, a)).catch(() => { if (!reloading) location.href = `${home}contact/` })
 })
 
 // Links from the earlier one-page site
