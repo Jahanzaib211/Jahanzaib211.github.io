@@ -55,6 +55,10 @@ document.addEventListener('click', e => {
   import('./lead').then(m => m.openLead(sol === null ? a.dataset.lead! : 'Solution', sol, a)).catch(() => { if (!reloading) location.href = `${home}contact/` })
 })
 
+// One not found page serves every language
+const lost = location.pathname.match(/^\/(ar|ur|zh)\//)?.[1], found = lost && document.querySelector<HTMLElement>(`[data-404="${lost}"]`)
+if (found) { document.querySelectorAll<HTMLElement>('[data-404]').forEach(x => { x.hidden = x !== found }); document.title = `${found.querySelector('h1')!.textContent}, ALI LABS X` }
+
 // Links from the earlier one-page site
 const moved: Record<string, string> = { solutions: 'solutions/', services: 'services/', products: 'products/', approach: 'approach/', infrastructure: 'approach/', founder: 'company/', team: 'company/#team', company: 'company/', 'nova-bots': 'products/#nova-bots', nova: 'products/#nova', loco: 'products/#loco', storeloom: 'products/#storeloom' }
 const was = moved[location.hash.slice(1)]
