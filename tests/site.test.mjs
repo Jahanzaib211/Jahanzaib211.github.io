@@ -1,11 +1,15 @@
 // Browser checks on the built site. Run "npm run build" first. Other hosts are blocked and nothing is sent.
-import { test, before, after } from 'node:test'
+import { test as run, before, after } from 'node:test'
 import assert from 'node:assert/strict'
 import { createServer } from 'node:http'
 import { existsSync, readFileSync, statSync, globSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { extname, join, resolve } from 'node:path'
-import { chromium } from 'playwright-core'
+import * as engines from 'playwright-core'
+const ENGINE = process.env.BROWSER ?? 'chromium', [PART, PARTS] = (process.env.SHARD ?? '0/1').split('/').map(Number)
+let nth = 0
+// only: the browsers a check applies to, when it depends on something the others do not have
+const test = (name, fn, only) => { if (nth++ % PARTS === PART) run(name, { skip: only && !only.includes(ENGINE) && `needs ${only.join(' or ')}` }, fn) }
 const DIST = resolve(process.env.DIST ?? 'dist'), TYPE = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.json': 'application/json', '.woff2': 'font/woff2' }
 let server, base, browser, missing = ''
 const LANGS = ['', 'ar/', 'ur/', 'zh/']
@@ -19,7 +23,7 @@ before(async () => {
   }).listen(0, '127.0.0.1'); await new Promise(r => server.once('listening', r)); base = `http://127.0.0.1:${server.address().port}/`
   // A test must never open the mail app or any other program on this computer
   const stub = mkdtempSync(join(tmpdir(), 'no-open-')); writeFileSync(join(stub, 'xdg-open'), '#!/bin/sh\nexit 0\n', { mode: 0o755 })
-  browser = await chromium.launch({ env: { ...process.env, PATH: `${stub}:${process.env.PATH}` }, ...(process.env.CHROME ? { executablePath: process.env.CHROME } : { channel: 'chrome' }), args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] })
+  browser = await engines[ENGINE].launch({ env: { ...process.env, PATH: `${stub}:${process.env.PATH}` }, ...(ENGINE === 'chromium' ? { ...(process.env.CHROME ? { executablePath: process.env.CHROME } : { channel: 'chrome' }), args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] } : {}) })
 })
 const answer = async (p, v) => { await p.locator(`.consent [data-v=${v}]`).click() }
 after(async () => { await browser?.close(); server?.closeAllConnections(); server?.close() })

@@ -19,8 +19,12 @@ addEventListener('keydown', e => { if (e.key === 'Escape' && lang?.open) { lang.
 addEventListener('pagehide', () => { if (lang) lang.open = false; set(false) })
 // After a new release an open page can ask for a file that is gone. Load the new page once, never over a form
 const home = document.querySelector<HTMLAnchorElement>('.logo')!.pathname
-let reloading = false
+let reloading = false, leaving = 0
+// Leaving a page also stops its files from loading. That is not a missing file, and must not cancel the visitor's own step
+addEventListener('beforeunload', () => { leaving = performance.now() })
+addEventListener('pageshow', () => { leaving = 0; reloading = false })
 addEventListener('vite:preloadError', () => {
+  if (leaving && performance.now() - leaving < 8000) { reloading = true; return }
   try { if (document.querySelector('dialog[open]') || sessionStorage.getItem('alx-reload')) return; sessionStorage.setItem('alx-reload', '1') } catch { return }
   reloading = true; location.reload()
 })
